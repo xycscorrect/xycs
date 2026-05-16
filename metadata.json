@@ -1,0 +1,6 @@
+{
+  "name": "XyCs App",
+  "description": "Aplikasi Chat, Manajemen Role, & Bot AI",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

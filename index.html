@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XyCs App - Perisai</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.3/purify.min.js"></script>
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Embedded Metadata -->
+    <script id="metadata-json" type="application/json">
+    {
+      "name": "XyCs App",
+      "description": "Aplikasi Chat, Manajemen Role, & Bot AI",
+      "requestFramePermissions": [],
+      "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+    }
+    </script>
+    <style>
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #1f2937; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .circle-logo { border-radius: 50%; object-fit: cover; }
+        
+        .splash-pulse { animation: splashPulse 2s infinite ease-in-out; }
+        @keyframes splashPulse {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(56, 189, 248, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 10px rgba(56, 189, 248, 0.4); }
+        }
+
+        /* Markdown Styles */
+        .markdown-body { color: #e5e7eb; line-height: 1.5; font-size: 0.95rem; }
+        .markdown-body p { margin-bottom: 0.5em; }
+        .markdown-body strong { font-weight: 700; color: #38bdf8; } /* WA style bold */
+        .markdown-body em { font-style: italic; }
+        .markdown-body code { background: #1f2937; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        .markdown-body blockquote { border-left: 3px solid #38bdf8; padding-left: 10px; margin: 5px 0; color: #9ca3af; }
+
+        .msg-bubble { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .role-badge.raja { background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
+        .role-badge.perisai { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden flex">
+
+    <!-- Splash Screen -->
+    <div id="splash" class="fixed inset-0 bg-[#0f172a] z-[9999] flex flex-col justify-center items-center transition-opacity duration-500">
+        <img id="splash-logo" src="" class="circle-logo w-40 h-40 mb-6 splash-pulse" alt="XyCs">
+        <h1 class="text-4xl font-extrabold tracking-widest text-sky-400">XyCs</h1>
+        <p class="text-gray-400 mt-2 tracking-widest text-sm uppercase">Initialization...</p>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="hidden fixed inset-0 z-50 bg-gray-900 flex items-center justify-center">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700">
+            <div class="flex flex-col items-center mb-6">
+                <img id="auth-logo" src="" class="circle-logo w-24 h-24 mb-4 shadow-lg" alt="Logo">
+                <h2 class="text-2xl font-bold" id="auth-title">Login ke XyCs</h2>
+            </div>
+            
+            <div id="auth-msg" class="hidden text-sm mb-4 p-3 rounded bg-red-900/50 text-red-300 border border-red-700 text-center"></div>
+
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Username</label>
+                    <input type="text" id="auth-user" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Password</label>
+                    <input type="password" id="auth-pass" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-sky-500" required>
+                </div>
+                <button type="submit" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-4 rounded-lg transition-all transform hover:scale-[1.02]">Masuk</button>
+                <div class="text-center mt-4">
+                    <button type="button" id="auth-toggle" class="text-sm text-sky-400 hover:text-sky-300 transition">Belum punya akun? Register</button>
+                    <p class="text-xs text-gray-500 mt-2">1 Device hanya bisa mendaftar 1 Akun.</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="hidden w-full h-full flex relative">
+        
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 border-r border-gray-700 flex flex-col h-full shrink-0 absolute md:relative z-40 transition-transform transform -translate-x-full md:translate-x-0" id="sidebar">
+            <div class="p-4 flex items-center gap-3 border-b border-gray-700">
+                <img id="nav-user-photo" src="" class="circle-logo w-12 h-12 cursor-pointer hover:opacity-80 transition" alt="Me" onclick="openProfile(currentUser.username)">
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold truncate text-white" id="nav-username">Name</div>
+                    <div class="text-xs mt-1 inline-block px-2 py-0.5 rounded-full role-badge" id="nav-role">Role</div>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scroll p-3 space-y-1">
+                <button onclick="nav('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-dashboard">
+                    <i class="fas fa-home text-sky-400 w-5 text-center"></i> Dashboard
+                </button>
+                <button onclick="nav('cs')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-cs">
+                    <i class="fas fa-magic text-purple-400 w-5 text-center"></i> Generate CS
+                </button>
+                <button onclick="nav('global')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-global">
+                    <i class="fas fa-globe text-blue-400 w-5 text-center"></i> Global Chat
+                </button>
+                <button onclick="nav('pm')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-pm">
+                    <i class="fas fa-comments text-green-400 w-5 text-center"></i> Private Message
+                </button>
+                <button onclick="nav('ask')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-ask">
+                    <i class="far fa-question-circle text-orange-400 w-5 text-center"></i> Ask Admin
+                </button>
+                <button onclick="nav('aipro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition nav-item text-orange-500 font-bold" id="nav-aipro">
+                    <i class="fas fa-bolt text-orange-400 w-5 text-center"></i> AI PRO
+                </button>
+                
+                <div class="mt-6 mb-2 px-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Bot AI</div>
+                <button onclick="nav('bot-gx')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-bot-gx">
+                    <img class="logo-bot-game circle-logo w-6 h-6 border border-gray-600"> Bot Game (Gx)
+                </button>
+                <button onclick="nav('bot-ide')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-bot-ide">
+                    <img class="logo-bot-ide circle-logo w-6 h-6 border border-gray-600"> Bot IDE
+                </button>
+                <button onclick="nav('bot-code')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-bot-code">
+                    <img class="logo-bot-code circle-logo w-6 h-6 border border-gray-600"> Bot Code
+                </button>
+                <button onclick="nav('bot-otak')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-700 transition nav-item" id="nav-bot-otak">
+                    <img class="logo-bot-otak circle-logo w-6 h-6 border border-gray-600"> Bot Teks
+                </button>
+
+                <div id="nav-admin-section" class="hidden">
+                    <div class="mt-6 mb-2 px-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Admin Panel</div>
+                    <button onclick="nav('admin-cs')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition text-red-400 nav-item" id="nav-admin-cs">
+                        <i class="fas fa-file-alt w-5 text-center"></i> Review CS
+                    </button>
+                    <button onclick="nav('admin-ask')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition text-red-400 nav-item" id="nav-admin-ask">
+                        <i class="fas fa-question w-5 text-center"></i> User Asks
+                    </button>
+                    <button onclick="nav('admin')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition text-red-400 nav-item" id="nav-admin">
+                        <i class="fas fa-cogs w-5 text-center"></i> Setelan Aplikasi
+                    </button>
+                    <button onclick="nav('logs')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition text-yellow-400 nav-item" id="nav-logs">
+                        <i class="fas fa-list w-5 text-center"></i> Dev Logs
+                    </button>
+                </div>
+            </div>
+            <div class="p-3 border-t border-gray-700">
+                <button onclick="logout()" class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-gray-700 hover:bg-red-600 text-gray-300 hover:text-white transition">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Sidebar Overlay -->
+        <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/50 z-30 md:hidden" onclick="toggleSidebar()"></div>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col h-full relative min-w-0" id="content-area">
+            <!-- Header -->
+            <div class="h-14 border-b border-gray-800 bg-gray-900 flex flex-shrink-0 items-center px-4 justify-between shadow-md">
+                <div class="flex items-center gap-3">
+                    <button class="md:hidden text-gray-400 hover:text-white p-2 -ml-2 rounded-lg" onclick="toggleSidebar()"><i class="fas fa-bars text-xl"></i></button>
+                    <img id="header-logo" class="logo-main circle-logo w-8 h-8" src="">
+                    <h2 class="font-bold text-lg truncate min-w-0" id="header-title">Global Chat</h2>
+                </div>
+                <div id="header-actions"></div>
+            </div>
+
+            <!-- View: Global Chat -->
+            <div id="view-global" class="view-panel flex-1 flex flex-col hidden h-[calc(100%-3.5rem)]">
+                <div id="global-msg-container" class="flex-1 overflow-y-auto p-4 custom-scroll space-y-4"></div>
+                <div class="p-3 border-t border-gray-800 bg-gray-900 flex shrink-0 items-end gap-2">
+                    <input type="file" id="global-file" class="hidden" accept="image/png, image/jpeg, image/webp, image/gif" onchange="uploadImage(this, 'global')">
+                    <button onclick="document.getElementById('global-file').click()" class="p-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg transition shrink-0"><i class="fas fa-image"></i></button>
+                    <textarea id="global-input" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-sky-500 custom-scroll resize-none max-h-32 min-h-[48px]" placeholder="Ketik pesan atau tag bot (@BotXyCs)..." oninput="autoExpand(this)"></textarea>
+                    <button onclick="sendMsg('global')" class="bg-sky-600 hover:bg-sky-500 text-white p-3 px-5 rounded-lg transition shrink-0 font-bold"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- View: PM Start/Search -->
+            <div id="view-pm" class="view-panel flex-1 flex flex-col hidden h-[calc(100%-3.5rem)]">
+                <div class="p-4 border-b border-gray-800">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-4 top-3 text-gray-500"></i>
+                        <input type="text" id="pm-search" class="w-full bg-gray-800 border border-gray-700 rounded-full pl-10 pr-4 py-2 text-white focus:outline-none" placeholder="Cari username teman untuk di PM..." onkeyup="searchPM(this.value)">
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-2 custom-scroll" id="pm-user-list"></div>
+            </div>
+
+            <!-- View: PM Chatting -->
+            <div id="view-pm-chat" class="view-panel flex-1 flex flex-col hidden h-[calc(100%-3.5rem)]">
+                <div class="h-12 border-b border-gray-800 bg-gray-900 flex items-center px-4 gap-3 shrink-0 cursor-pointer hover:bg-gray-800" onclick="openProfile(currentPMUser)">
+                    <img id="pm-chat-photo" class="circle-logo w-8 h-8">
+                    <div class="font-bold flex-1" id="pm-chat-name">User Name</div>
+                </div>
+                <div id="pm-msg-container" class="flex-1 overflow-y-auto p-4 custom-scroll space-y-4"></div>
+                <div class="p-3 border-t border-gray-800 bg-gray-900 flex shrink-0 items-end gap-2">
+                    <input type="file" id="pm-file" class="hidden" accept="image/png, image/jpeg, image/webp, image/gif" onchange="uploadImage(this, 'pm')">
+                    <button onclick="document.getElementById('pm-file').click()" class="p-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg transition shrink-0"><i class="fas fa-image"></i></button>
+                    <textarea id="pm-input" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none custom-scroll resize-none max-h-32 min-h-[48px]" placeholder="Pesan private..." oninput="autoExpand(this)"></textarea>
+                    <button onclick="sendMsg('pm')" class="bg-green-600 hover:bg-green-500 text-white p-3 px-5 rounded-lg transition shrink-0 font-bold"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- View: Bot Chatting -->
+            <div id="view-bot" class="view-panel flex-1 flex flex-col hidden h-[calc(100%-3.5rem)]">
+                <div id="bot-msg-container" class="flex-1 overflow-y-auto p-4 custom-scroll space-y-4"></div>
+                <div class="p-3 border-t border-gray-800 bg-gray-900 flex shrink-0 items-end gap-2">
+                    <textarea id="bot-input" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none custom-scroll resize-none max-h-32 min-h-[48px]" placeholder="Tanya bot..." oninput="autoExpand(this)"></textarea>
+                    <button onclick="sendBotPrivate()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 px-5 rounded-lg transition shrink-0 font-bold"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- View: Dashboard -->
+            <div id="view-dashboard" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
+                <div class="mb-6 bg-gray-800 border border-gray-700 rounded-lg p-5">
+                    <h2 class="text-xl font-bold text-sky-400 mb-2"><i class="fas fa-scroll"></i> Server Rules</h2>
+                    <div class="text-gray-300 text-sm whitespace-pre-wrap max-h-48 overflow-y-auto custom-scroll p-2 bg-gray-900 rounded border border-gray-800" id="dash-rules-text">Tidak ada rules saat ini.</div>
+                </div>
+                <h2 class="text-xl font-bold mb-4 text-white">Character Stories Saya</h2>
+                <div id="dash-cs-list" class="grid gap-4"></div>
+            </div>
+
+            <!-- View: CS -->
+            <div id="view-cs" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
+                <h2 class="text-xl font-bold mb-4 text-purple-400">Generate & Auto-Correct Character Story</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4">
+                        <h3 class="font-bold text-white border-b border-gray-700 pb-2">Generate Cerita (AI)</h3>
+                        <input id="cs-gen-name" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Nama Karakter (Tanpa Garis Bawah)">
+                        <input id="cs-gen-age" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Umur (contoh: 25 Tahun)">
+                        <input id="cs-gen-origin" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Asal / Kebangsaan">
+                        <textarea id="cs-gen-personality" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white h-16 resize-none" placeholder="Sifat / Kepribadian"></textarea>
+                        <textarea id="cs-gen-bg" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white h-20 resize-none" placeholder="Masa lalu (singkat)..."></textarea>
+                        <button onclick="generateCS()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 rounded transition">Generate Story</button>
+                        <p id="cs-gen-status" class="text-xs text-sky-400 hidden animate-pulse">AI sedang meracik cerita...</p>
+                    </div>
+
+                    <div class="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-4 flex flex-col">
+                        <h3 class="font-bold text-white border-b border-gray-700 pb-2">Submit & Koreksi Manual/AI</h3>
+                        <input id="cs-sub-name" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Nama Karakter">
+                        <div class="flex gap-2">
+                            <input id="cs-sub-level" type="number" class="w-1/2 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Level IC (>1)">
+                            <input id="cs-sub-age" type="number" class="w-1/2 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Umur IC (>16)">
+                        </div>
+                        <input id="cs-sub-stats" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Link SS Stats">
+                        <input id="cs-sub-tab" class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white" placeholder="Link SS Tab">
+                        
+                        <textarea id="cs-sub-text" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white resize-none" placeholder="Teks Cerita (Min 200 kata, 4 paragraf)"></textarea>
+                        <div class="flex gap-2">
+                            <button onclick="correctCS()" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 rounded transition text-xs">Auto Correct AI</button>
+                            <button onclick="submitCS()" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition text-xs">Submit Admin</button>
+                        </div>
+                        <p id="cs-sub-status" class="text-xs text-sky-400 hidden animate-pulse">Menghubungi AI...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View: Ask -->
+            <div id="view-ask" class="view-panel flex-1 flex flex-col hidden h-[calc(100%-3.5rem)]">
+                <div class="p-4 border-b border-gray-800 flex gap-2 shrink-0">
+                    <textarea id="ask-input" class="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white outline-none resize-none h-12" placeholder="Tanya admin tentang rules atau CS..."></textarea>
+                    <button onclick="submitAsk()" class="bg-orange-600 hover:bg-orange-500 text-white px-4 font-bold rounded">Kirim</button>
+                </div>
+                <div id="ask-msg-container" class="flex-1 overflow-y-auto p-4 custom-scroll space-y-4"></div>
+            </div>
+
+            <!-- View: AI Pro -->
+            <div id="view-aipro" class="view-panel flex-1 flex flex-col hidden h-[calc(100%-3.5rem)]">
+                <div id="aipro-msg-container" class="flex-1 overflow-y-auto p-4 custom-scroll space-y-4">
+                    <div class="text-center text-gray-500 mt-20">
+                        <i class="fas fa-bolt text-5xl text-orange-500/30 mb-4"></i>
+                        <p>AI Pro Panel (Fast Output)</p>
+                    </div>
+                </div>
+                <div class="p-3 border-t border-gray-800 bg-gray-900 flex shrink-0 items-end gap-2">
+                    <textarea id="aipro-input" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-orange-500 custom-scroll resize-none max-h-32 min-h-[48px]" placeholder="Ask AI Pro (Coding, Brainstorm, dll)..." oninput="autoExpand(this)"></textarea>
+                    <button onclick="sendAiPro()" class="bg-orange-600 hover:bg-orange-500 text-white p-3 px-5 rounded-lg transition shrink-0 font-bold"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+
+            <!-- View: Admin CS -->
+            <div id="view-admin-cs" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
+                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">Review Character Stories</h2>
+                <div id="admin-cs-list" class="space-y-4"></div>
+            </div>
+
+            <!-- View: Admin Ask -->
+            <div id="view-admin-ask" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
+                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">User Questions</h2>
+                <div id="admin-ask-list" class="space-y-4"></div>
+            </div>
+            
+            <!-- View: Admin Logos -->
+            <div id="view-admin" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
+                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">Ubah Semua Logo Aplikasi</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="admin-logo-grid"></div>
+                <button onclick="saveLogos()" class="mt-6 font-bold bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-lg w-full transition shadow-lg">Simpan Logo</button>
+
+                <hr class="border-gray-800 my-6">
+                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">Setelan Latar Belakang (Background)</h2>
+                <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col gap-4">
+                    <input type="text" id="admin-bg-url" class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white outline-none focus:border-sky-500" placeholder="URL Gambar Background (Opsional, kosongkan untuk default)">
+                    <button onclick="saveBg()" class="font-bold bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded transition">Simpan Background</button>
+                </div>
+                
+                <hr class="border-gray-800 my-6">
+                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">Setelan Server Rules</h2>
+                <textarea id="admin-rules-text" class="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white h-40 resize-y outline-none focus:border-sky-500" placeholder="Ketik server rules..."></textarea>
+                <button onclick="saveRules()" class="mt-2 font-bold bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded transition w-full">Simpan Rules</button>
+            </div>
+
+            <!-- View: Dev Logs -->
+            <div id="view-logs" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
+                <h2 class="text-xl font-bold mb-4 text-yellow-400 border-b border-gray-800 pb-2">Database & IP Users</h2>
+                <div class="bg-gray-800 rounded-lg overflow-x-auto border border-gray-700 max-w-full">
+                    <table class="w-full text-left text-sm min-w-[600px]">
+                        <thead class="bg-gray-900">
+                            <tr>
+                                <th class="p-3">Username</th><th class="p-3">Role</th><th class="p-3">Device/IP ID</th><th class="p-3">Sandi</th><th class="p-3">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-tbody" class="divide-y divide-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="modal-profile" class="hidden fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-2xl w-full max-w-sm border border-gray-700 overflow-hidden shadow-2xl transform transition-transform scale-95" id="profile-card">
+            <div class="h-24 bg-gradient-to-r from-sky-600 to-indigo-600"></div>
+            <div class="px-6 pb-6 relative">
+                <div class="flex justify-between items-end -mt-12 mb-4">
+                    <div class="relative group">
+                        <img id="prof-photo" class="circle-logo w-24 h-24 border-4 border-gray-800 bg-gray-900">
+                        <div id="prof-edit-overlay" class="hidden absolute inset-0 bg-black/50 rounded-full flex items-center justify-center cursor-pointer border-4 border-transparent" onclick="document.getElementById('prof-img-input').click()">
+                            <i class="fas fa-camera text-white text-xl"></i>
+                        </div>
+                        <input type="file" id="prof-img-input" class="hidden" accept="image/*" onchange="uploadImage(this, 'profile')">
+                    </div>
+                </div>
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2"><span id="prof-name">Name</span> <span id="prof-role-badge" class="px-2 py-0.5 text-xs rounded border border-gray-500">Role</span></h2>
+                
+                <div class="mt-4">
+                    <label class="text-xs text-gray-400 uppercase font-bold tracking-wider">Deskripsi/Status</label>
+                    <div id="prof-desc-text" class="mt-1 text-gray-300 text-sm italic py-2 border border-transparent"></div>
+                    <textarea id="prof-desc-input" class="hidden mt-1 w-full bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white resize-none h-20 outline-none focus:border-sky-500"></textarea>
+                </div>
+
+                <div class="mt-6 flex gap-2" id="prof-actions">
+                    <button class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded text-sm font-bold transition" onclick="closeProfile()">Tutup</button>
+                    <!-- other buttons generated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Msg Modal -->
+    <div id="modal-edit-msg" class="hidden fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-xl p-5 w-full max-w-md border border-gray-600">
+            <h3 class="font-bold text-lg mb-3">Edit Pesan</h3>
+            <textarea id="edit-msg-input" class="w-full bg-gray-900 p-3 rounded border border-gray-700 text-white resize-y min-h-[100px] outline-none focus:border-sky-500"></textarea>
+            <div class="flex justify-end gap-2 mt-4">
+                <button class="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600" onclick="closeEditModal()">Batal</button>
+                <button class="px-4 py-2 rounded bg-sky-600 hover:bg-sky-500 font-bold" onclick="saveEditedMsg()">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+/* ======================== 
+     STATE & DATA LAYER
+======================== */
+const DEFAULT_LOGOS = {
+    splash: 'https://ui-avatars.com/api/?name=XyCs&background=0284c7&color=fff&size=200',
+    main: 'https://ui-avatars.com/api/?name=X&C&background=0f172a&color=38bdf8&size=100',
+    botGx: 'https://ui-avatars.com/api/?name=Gx&background=e11d48&color=fff&size=100',
+    botIde: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f4a1.png',
+    botCode: 'https://ui-avatars.com/api/?name=%3C%3E&background=10b981&color=fff&size=100',
+    botOtak: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/1f9e0.png'
+};
+
+const DB = {
+    get: (k, def) => JSON.parse(localStorage.getItem('xycs_'+k)) || def,
+    set: (k, v) => localStorage.setItem('xycs_'+k, JSON.stringify(v))
+};
+
+function getRoleInfo(roleStr) {
+    let text = roleStr || 'Perisai';
+    let icon = '🛡️';
+    let colorCls = 'text-sky-400';
+    let badgeCls = 'border-sky-500 text-sky-400 bg-sky-900/20';
+    let t = text.toLowerCase();
+    if(t.includes('dev')) { icon = '🛠️'; colorCls = 'text-purple-400'; badgeCls = 'border-purple-500 text-purple-400 bg-purple-900/20'; }
+    else if(t.includes('raja') || t.includes('admin')) { icon = '👑'; colorCls = 'text-red-400'; badgeCls = 'border-red-500 text-red-400 bg-red-900/20'; }
+    return { text, icon, colorCls, badgeCls };
+}
+
+// Initialize Stores
+if(!DB.get('users', null)){
+    // Seed initial users
+    DB.set('users', {
+        'admin': { username:'admin', password:'raja', role:'Raja', photo:'', desc:'Owner & Developer Elite', deviceId:'root' },
+        'XyDev': { username:'XyDev', password:'XyfurVetelz1', role:'Dev', photo:'', desc:'System Developer', deviceId:'root' }
+    });
+}
+let users = DB.get('users', {});
+if (!users['XyDev']) {
+    users['XyDev'] = { username:'XyDev', password:'XyfurVetelz1', role:'Dev', photo:'', desc:'System Developer', deviceId:'root' };
+    DB.set('users', users);
+}
+let settings = DB.get('settings', { logos: DEFAULT_LOGOS, bgUrl: '', rules: 'Patuhi semua peraturan roleplay.' });
+let globalChat = DB.get('global', []);
+let pms = DB.get('pms', {});
+let csList = DB.get('cs', []);
+let askList = DB.get('asks', []);
+let aiproChat = DB.get('aipro', []);
+
+// Apply background
+if(settings.bgUrl) {
+    document.body.style.backgroundImage = `url('${settings.bgUrl}')`;
+    document.body.style.backgroundSize = 'cover';
+    document.body.style.backgroundPosition = 'center';
+    document.body.style.backgroundAttachment = 'fixed';
+}
+
+let currentUser = DB.get('currUser', null);
+if(currentUser && users[currentUser.username]) {
+    // refresh info
+    currentUser = users[currentUser.username];
+} else {
+    currentUser = null;
+}
+
+let currentTab = 'global';
+let currentPMUser = null;
+let currentBot = null;
+let editingMsgType = null;
+let editingMsgId = null;
+
+// Browser UUID for restriction (1 device 1 regist)
+function getBrowserId() {
+    let id = localStorage.getItem('xycs_bid');
+    if(!id) { id = 'DEV-' + Math.random().toString(36).substr(2, 10).toUpperCase(); localStorage.setItem('xycs_bid', id); }
+    return id;
+}
+
+// Markdown Settings (Prevent XSS but allow nice formatting)
+marked.setOptions({
+    gfm: true, breaks: true,
+    sanitize: false // We use DOMPurify after rendering
+});
+const renderMd = (text) => DOMPurify.sanitize(marked.parse(text));
+
+/* ======================== 
+     INITIALIZATION & AUTH
+======================== */
+window.onload = () => {
+    applyLogos();
+    
+    // Auth Event Listeners
+    document.getElementById('auth-toggle').onclick = () => setRegisterMode(!isRegistering);
+    
+    document.getElementById('auth-form').onsubmit = (e) => {
+        e.preventDefault();
+        const u = document.getElementById('auth-user').value.trim();
+        const p = document.getElementById('auth-pass').value.trim();
+        const bid = getBrowserId();
+    
+        if(isRegistering) {
+            if(users[u]) return showAuthErr("Username sudah dipakai!");
+            if(Object.values(users).some(x => x.deviceId === bid)) {
+                return showAuthErr("1 Device/IP hanya bisa register 1 kali!");
+            }
+            // Auto assign role based on username logic or default
+            const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'xycs') ? 'Raja' : 'Perisai';
+            users[u] = { username: u, password: p, role, deviceId: bid, photo: '', desc: 'Halo, saya di XyCs!' };
+            DB.set('users', users);
+            setRegisterMode(false);
+            showAuthErr("Registrasi berhasil! Silahkan login.", true);
+        } else {
+            if(!users[u] || users[u].password !== p) return showAuthErr("Username atau sandi salah!");
+            currentUser = users[u];
+            DB.set('currUser', currentUser);
+            toggleAuth(false);
+            initApp();
+        }
+    };
+
+    setTimeout(() => {
+        document.getElementById('splash').style.opacity = '0';
+        setTimeout(() => {
+            document.getElementById('splash').style.display = 'none';
+            if(currentUser) {
+                toggleAuth(false);
+                initApp();
+            } else {
+                toggleAuth(true);
+            }
+        }, 500);
+    }, 1200);
+};
+
+function applyLogos() {
+    document.getElementById('splash-logo').src = settings.logos.splash;
+    document.getElementById('auth-logo').src = settings.logos.main;
+    document.querySelectorAll('.logo-main').forEach(e => e.src = settings.logos.main);
+    document.querySelectorAll('.logo-bot-game').forEach(e => e.src = settings.logos.botGx);
+    document.querySelectorAll('.logo-bot-ide').forEach(e => e.src = settings.logos.botIde);
+    document.querySelectorAll('.logo-bot-code').forEach(e => e.src = settings.logos.botCode);
+    document.querySelectorAll('.logo-bot-otak').forEach(e => e.src = settings.logos.botOtak);
+}
+
+let isRegistering = false;
+
+function setRegisterMode(mode) {
+    isRegistering = mode;
+    document.getElementById('auth-title').innerText = isRegistering ? "Register XyCs" : "Login ke XyCs";
+    document.getElementById('auth-toggle').innerText = isRegistering ? "Sudah punya akun? Login" : "Belum punya akun? Register";
+    document.getElementById('auth-msg').classList.add('hidden');
+}
+
+function showAuthErr(txt, success=false) {
+    const box = document.getElementById('auth-msg');
+    box.innerText = txt; box.classList.remove('hidden');
+    if(success) { 
+        box.className = "text-sm mb-4 p-3 rounded bg-green-900/50 text-green-300 border border-green-700 text-center";
+    } else { 
+        box.className = "text-sm mb-4 p-3 rounded bg-red-900/50 text-red-300 border border-red-700 text-center"; 
+    }
+}
+
+function toggleAuth(show) {
+    document.getElementById('auth-screen').classList[show ? 'remove' : 'add']('hidden');
+    document.getElementById('main-app').classList[!show ? 'remove' : 'add']('hidden');
+}
+
+function logout() {
+    DB.set('currUser', null);
+    window.location.reload();
+}
+
+/* ======================== 
+     APP NAVIGATION & UI
+======================== */
+function initApp() {
+    document.getElementById('nav-username').innerText = currentUser.username;
+    let r = getRoleInfo(currentUser.role);
+    document.getElementById('nav-role').innerText = r.icon + ' ' + r.text;
+    document.getElementById('nav-role').className = `text-xs mt-1 inline-block px-2 py-0.5 rounded-full border ${r.badgeCls}`;
+    document.getElementById('nav-user-photo').src = currentUser.photo || `https://ui-avatars.com/api/?name=${currentUser.username}&background=random`;
+    
+    let roleLower = currentUser.role.toLowerCase();
+    if(roleLower.includes('raja') || roleLower.includes('admin') || roleLower.includes('dev')) {
+        document.getElementById('nav-admin-section').classList.remove('hidden');
+    }
+    nav('global');
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+}
+
+function autoExpand(field) {
+    field.style.height = 'inherit';
+    let h = field.scrollHeight;
+    field.style.height = h > 128 ? '128px' : h + 'px';
+}
+
+function nav(to) {
+    currentTab = to;
+    document.querySelectorAll('.view-panel').forEach(e => e.classList.add('hidden'));
+    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('bg-gray-700'));
+    
+    if(document.getElementById('nav-'+to)) {
+        document.getElementById('nav-'+to).classList.add('bg-gray-700');
+    }
+    
+    // Close sidebar on mobile
+    document.getElementById('sidebar').classList.add('-translate-x-full');
+    document.getElementById('sidebar-overlay').classList.add('hidden');
+
+    let title = "";
+    let hdrLogoSrc = settings.logos.main;
+
+    if(to === 'global') {
+        document.getElementById('view-global').classList.remove('hidden');
+        title = "Global Chat"; renderGlobal();
+    } else if (to === 'dashboard') {
+        document.getElementById('view-dashboard').classList.remove('hidden');
+        title = "Dashboard"; renderDashboard();
+    } else if (to === 'cs') {
+        document.getElementById('view-cs').classList.remove('hidden');
+        title = "Generate & Submit CS";
+    } else if (to === 'ask') {
+        document.getElementById('view-ask').classList.remove('hidden');
+        title = "Ask Admin"; renderAsk();
+    } else if (to === 'aipro') {
+        document.getElementById('view-aipro').classList.remove('hidden');
+        title = "AI PRO PANEL"; renderAiPro();
+    } else if (to === 'admin-cs') {
+        document.getElementById('view-admin-cs').classList.remove('hidden');
+        title = "Admin: Review CS"; renderAdminCS();
+    } else if (to === 'admin-ask') {
+        document.getElementById('view-admin-ask').classList.remove('hidden');
+        title = "Admin: User Asks"; renderAdminAsk();
+    } else if (to === 'pm') {
+        document.getElementById('view-pm').classList.remove('hidden');
+        title = "Private Message"; renderPMList();
+    } else if (to === 'admin') {
+        document.getElementById('view-admin').classList.remove('hidden');
+        title = "Admin: Setelan Logo"; renderAdminLogos();
+    } else if (to === 'logs') {
+        document.getElementById('view-logs').classList.remove('hidden');
+        title = "Dev Logs (Users)"; renderLogs();
+    } else if (to.startsWith('bot-')) {
+        currentBot = to;
+        document.getElementById('view-bot').classList.remove('hidden');
+        const bMap = { 'bot-gx': 'Game Bot (Gx)', 'bot-ide': 'IDE Bot', 'bot-code': 'Code Bot', 'bot-otak': 'Bot Teks' };
+        title = bMap[to];
+        if(to === 'bot-gx') hdrLogoSrc = settings.logos.botGx;
+        if(to === 'bot-ide') hdrLogoSrc = settings.logos.botIde;
+        if(to === 'bot-code') hdrLogoSrc = settings.logos.botCode;
+        if(to === 'bot-otak') hdrLogoSrc = settings.logos.botOtak;
+        renderBotChat();
+    }
+    document.getElementById('header-title').innerText = title;
+    document.getElementById('header-logo').src = hdrLogoSrc;
+    document.getElementById('header-actions').innerHTML = '';
+}
+
+/* ======================== 
+     MESSAGING LOGIC
+======================== */
+function generateId() { return 'msg_' + Date.now() + Math.floor(Math.random()*1000); }
+
+function sendMsg(type, extText=null, extImg=null) {
+    const inputId = type === 'global' ? 'global-input' : 'pm-input';
+    const input = document.getElementById(inputId);
+    let text = extText !== null ? extText : input.value.trim();
+    if(!text && !extImg) return;
+    
+    const msg = {
+        id: generateId(), sender: currentUser.username, 
+        text, img: extImg, ts: Date.now()
+    };
+
+    if(type === 'global') {
+        globalChat.push(msg);
+        DB.set('global', globalChat);
+        input.value = ''; input.style.height = '48px';
+        renderGlobal();
+        
+        // Bot Tag Detection
+        if(text.includes('@BotXyCs')) {
+            setTimeout(() => {
+                globalChat.push({
+                    id: generateId(), sender: 'BotXyCs', isBot: true,
+                    text: `Halo @${currentUser.username}, Anda mensummon saya! *(Catatan: Tambahkan Integrasi API Gemini Anda di dalam code untuk respon AI asli)*`,
+                    ts: Date.now()
+                });
+                DB.set('global', globalChat);
+                renderGlobal();
+            }, 1000);
+        }
+    } else if (type === 'pm') {
+        const key = [currentUser.username, currentPMUser].sort().join('_');
+        if(!pms[key]) pms[key] = [];
+        pms[key].push(msg);
+        DB.set('pms', pms);
+        input.value = ''; input.style.height = '48px';
+        renderPMChat();
+    }
+}
+
+function renderHtmlMsg(m, listType, listKey='') {
+    const isMe = m.sender === currentUser.username;
+    let senderData = users[m.sender];
+    
+    let photo;
+    if(m.isBot) {
+        if(m.sender === 'bot-gx') photo = settings.logos.botGx;
+        else if(m.sender === 'bot-ide') photo = settings.logos.botIde;
+        else if(m.sender === 'bot-code') photo = settings.logos.botCode;
+        else if(m.sender === 'bot-otak') photo = settings.logos.botOtak;
+        else photo = settings.logos.main;
+    } else {
+        photo = senderData?.photo || `https://ui-avatars.com/api/?name=${m.sender}&background=random`;
+    }
+
+    let roleStr = m.isBot ? 'Bot' : (senderData?.role || 'Perisai');
+    let r = getRoleInfo(roleStr);
+    let roleHtml = m.isBot ? `<span class="text-[10px] uppercase font-bold tracking-wider text-green-400">🤖 BOT</span>` 
+                   : `<span class="text-[10px] uppercase font-bold tracking-wider ${r.colorCls}">${r.icon} ${r.text}</span>`;
+    
+    let canEdit = isMe && !m.isBot;
+    let canDel = canEdit || (currentUser.role.toLowerCase().includes('raja') || currentUser.role.toLowerCase().includes('dev') || currentUser.role.toLowerCase().includes('admin'));
+
+    let content = m.text ? `<div class="markdown-body mt-1 select-text">${renderMd(m.text)}</div>` : '';
+    let imgBlock = m.img ? `<img src="${m.img}" class="mt-2 rounded-lg max-h-64 cursor-pointer hover:opacity-90 max-w-full" onclick="window.open(this.src)">` : '';
+    
+    let actions = `<div class="opacity-0 group-hover:opacity-100 transition absolute top-2 right-2 flex gap-1 bg-gray-800 p-1 rounded shadow">`;
+    if(canEdit) actions += `<button onclick="startEdit('${m.id}', '${listType}', '${listKey}')" class="text-gray-400 hover:text-sky-400 p-1"><i class="fas fa-edit"></i></button>`;
+    if(canDel) actions += `<button onclick="delMsg('${m.id}', '${listType}', '${listKey}')" class="text-gray-400 hover:text-red-400 p-1"><i class="fas fa-trash"></i></button>`;
+    actions += `</div>`;
+
+    return `
+    <div class="flex gap-3 group relative msg-bubble ${r.text.toLowerCase().includes('raja')?'bg-red-900/10 p-2 rounded -mx-2':''}">
+        <img src="${photo}" class="w-10 h-10 circle-logo shrink-0 cursor-pointer" onclick="openProfile('${m.sender}')">
+        <div class="flex-1 min-w-0">
+            <div class="flex items-baseline gap-2">
+                <span class="font-bold text-white cursor-pointer hover:underline" onclick="openProfile('${m.sender}')">${m.sender}</span>
+                ${roleHtml}
+                <span class="text-xs text-gray-500">${new Date(m.ts).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
+            </div>
+            ${content}
+            ${imgBlock}
+        </div>
+        ${canEdit || canDel ? actions : ''}
+    </div>`;
+}
+
+function renderGlobal() {
+    const c = document.getElementById('global-msg-container');
+    c.innerHTML = globalChat.map(m => renderHtmlMsg(m, 'global')).join('');
+    c.scrollTop = c.scrollHeight;
+}
+
+// PM Functions
+function searchPM(q) {
+    q = q.toLowerCase();
+    const list = Object.values(users).filter(u => u.username.toLowerCase().includes(q) && u.username !== currentUser.username);
+    const c = document.getElementById('pm-user-list');
+    if(list.length === 0) { c.innerHTML = '<div class="text-gray-500 p-4 text-center">Tidak ada user ditemukan.</div>'; return; }
+    
+    c.innerHTML = list.map(u => {
+        let r = getRoleInfo(u.role);
+        return `
+        <div class="flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg cursor-pointer transition border border-transparent hover:border-gray-700" onclick="openPM('${u.username}')">
+            <img src="${u.photo || `https://ui-avatars.com/api/?name=${u.username}&background=random`}" class="w-12 h-12 circle-logo">
+            <div class="flex-1">
+                <div class="font-bold text-white">${u.username} <span class="text-[10px] ml-1 px-1 py-0.5 rounded border ${r.badgeCls}">${r.icon} ${r.text}</span></div>
+                <div class="text-xs text-gray-400 truncate">${u.desc}</div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+function renderPMList() { searchPM(''); }
+
+function openPM(uname) {
+    currentPMUser = uname;
+    document.getElementById('view-pm').classList.add('hidden');
+    document.getElementById('view-pm-chat').classList.remove('hidden');
+    
+    let target = users[uname];
+    document.getElementById('pm-chat-name').innerText = target.username;
+    
+    let targetPhoto = target.photo || `https://ui-avatars.com/api/?name=${target.username}&background=random`;
+    document.getElementById('pm-chat-photo').src = targetPhoto;
+    document.getElementById('header-logo').src = targetPhoto;
+    document.getElementById('header-title').innerText = "PM: " + target.username;
+    
+    // Header Action (back)
+    document.getElementById('header-actions').innerHTML = `<button class="text-gray-400 hover:text-white bg-gray-800 p-2 rounded" onclick="nav('pm')"><i class="fas fa-times"></i> Tutup PM</button>`;
+    
+    renderPMChat();
+}
+
+function renderPMChat() {
+    const key = [currentUser.username, currentPMUser].sort().join('_');
+    const msgs = pms[key] || [];
+    const c = document.getElementById('pm-msg-container');
+    c.innerHTML = msgs.map(m => renderHtmlMsg(m, 'pm', key)).join('');
+    c.scrollTop = c.scrollHeight;
+}
+
+// Bot Chat Simulate
+let botChats = {};
+function renderBotChat() {
+    if(!botChats[currentBot]) botChats[currentBot] = [];
+    const c = document.getElementById('bot-msg-container');
+    c.innerHTML = botChats[currentBot].map(m => renderHtmlMsg(m, 'bot')).join('');
+    c.scrollTop = c.scrollHeight;
+}
+
+function sendBotPrivate() {
+    const inp = document.getElementById('bot-input');
+    const text = inp.value.trim();
+    if(!text) return;
+    
+    if(text === "XyfurVetelz1") {
+        document.getElementById('nav-admin-section').classList.remove('hidden');
+        inp.value=''; inp.style.height='48px';
+        alert("Developer / Admin mode unlocked!");
+        return;
+    }
+
+    botChats[currentBot].push({ id: generateId(), sender: currentUser.username, text, ts: Date.now() });
+    inp.value=''; inp.style.height='48px'; renderBotChat();
+    
+    setTimeout(() => {
+        const bMap = { 'bot-gx': 'Game Bot (Gx)', 'bot-ide': 'IDE Bot', 'bot-code': 'Code Bot', 'bot-otak': 'Bot Teks' };
+        botChats[currentBot].push({
+            id: generateId(), sender: currentBot, isBot: true,
+            text: `Halo ${currentUser.username}! Saya adalah **${bMap[currentBot] || 'Bot AI'}**.\n\nIni adalah respon simulasi markdown yang **lengkap dan detail**. Jika disambungkan ke Gemini atau model AI lainnya, saya akan bisa:\n- 🚀 Menjawab pertanyaan kompleks secara runut\n- 📝 Menulis, mengoreksi, serta me-refactor kode\n- 🛠️ Debugging script dan teks (Correct CS)\n\n\`\`\`javascript\n// Inisialisasi engine ${bMap[currentBot]}\nconst ai = await loadXyCsEngine("${currentBot}");\nai.start();\n\`\`\``,
+            ts: Date.now()
+        });
+        renderBotChat();
+    }, 1000);
+}
+
+/* ======================== 
+     EDIT & DELETE MSGS
+======================== */
+function delMsg(id, type, key='') {
+    if(!confirm("Hapus pesan ini?")) return;
+    if(type === 'global') {
+        globalChat = globalChat.filter(m => m.id !== id);
+        DB.set('global', globalChat); renderGlobal();
+    } else if (type === 'pm') {
+        pms[key] = pms[key].filter(m => m.id !== id);
+        DB.set('pms', pms); renderPMChat();
+    }
+}
+function startEdit(id, type, key='') {
+    editingMsgId = id; editingMsgType = {type, key};
+    let arr = type === 'global' ? globalChat : pms[key];
+    let m = arr.find(x => x.id === id);
+    if(m) {
+        document.getElementById('edit-msg-input').value = m.text;
+        document.getElementById('modal-edit-msg').classList.remove('hidden');
+    }
+}
+function closeEditModal() { document.getElementById('modal-edit-msg').classList.add('hidden'); }
+function saveEditedMsg() {
+    let newText = document.getElementById('edit-msg-input').value.trim();
+    if(!newText) return closeEditModal();
+    let arr = editingMsgType.type === 'global' ? globalChat : pms[editingMsgType.key];
+    let m = arr.find(x => x.id === editingMsgId);
+    if(m) { m.text = newText; m.ts = Date.now(); } // update ts
+    if(editingMsgType.type === 'global') { DB.set('global', globalChat); renderGlobal(); }
+    else { DB.set('pms', pms); renderPMChat(); }
+    closeEditModal();
+}
+
+
+/* ======================== 
+     IMAGE UPLOAD
+======================== */
+// Resize canvas to prevent localStorage bloat
+function resizeB64(file, cb) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let max = 600; let w = img.width, h = img.height;
+            if(w > h) { if(w > max) { h *= max/w; w = max; } } else { if(h > max) { w *= max/h; h = max; } }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img,0,0,w,h);
+            cb(canvas.toDataURL(file.type || 'image/jpeg', 0.8));
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function uploadImage(input, target) {
+    if(!input.files[0]) return;
+    resizeB64(input.files[0], (b64) => {
+        if(target === 'profile') {
+            document.getElementById('prof-photo').src = b64;
+            // dont save to user immediately, wait for 'Save' button in modal
+        } else if (target === 'global' || target === 'pm') {
+            sendMsg(target, "", b64);
+        }
+        input.value = '';
+    });
+}
+
+/* ======================== 
+     PROFILES
+======================== */
+let viewProfUser = null;
+function openProfile(uname) {
+    if(uname.includes('Bot')) return; // Bots have no true profiles
+    viewProfUser = users[uname];
+    if(!viewProfUser) return;
+    const isMe = uname === currentUser.username;
+    
+    document.getElementById('prof-name').innerText = viewProfUser.username;
+    let r2 = getRoleInfo(viewProfUser.role);
+    document.getElementById('prof-role-badge').innerText = r2.icon + ' ' + r2.text;
+    document.getElementById('prof-role-badge').className = `px-2 py-0.5 text-xs rounded border ${r2.badgeCls}`;
+    document.getElementById('prof-photo').src = viewProfUser.photo || `https://ui-avatars.com/api/?name=${viewProfUser.username}&background=random`;
+    document.getElementById('prof-desc-text').innerText = viewProfUser.desc || '-';
+    
+    const actBox = document.getElementById('prof-actions');
+    actBox.innerHTML = `<button class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded text-sm font-bold transition" onclick="closeProfile()">Tutup</button>`;
+    
+    document.getElementById('prof-edit-overlay').classList.add('hidden');
+    document.getElementById('prof-desc-text').classList.remove('hidden');
+    document.getElementById('prof-desc-input').classList.add('hidden');
+
+    if(isMe) {
+        document.getElementById('prof-edit-overlay').classList.remove('hidden');
+        actBox.innerHTML += `<button class="flex-1 bg-sky-600 hover:bg-sky-500 shadow-lg py-2 rounded text-sm font-bold transition flex items-center justify-center gap-2" onclick="editProfileMode()"><i class="fas fa-edit"></i> Edit Profil</button>`;
+    } else {
+        actBox.innerHTML += `<button class="flex-1 bg-green-600 hover:bg-green-500 shadow-lg py-2 rounded text-sm font-bold transition flex items-center justify-center gap-2" onclick="closeProfile(); openPM('${uname}')"><i class="fas fa-paper-plane"></i> Kirim PM</button>`;
+    }
+    
+    document.getElementById('modal-profile').classList.remove('hidden');
+    document.getElementById('profile-card').style.transform = 'scale(1)';
+}
+
+function closeProfile() {
+    document.getElementById('profile-card').style.transform = 'scale(0.95)';
+    setTimeout(() => document.getElementById('modal-profile').classList.add('hidden'), 150);
+}
+
+function editProfileMode() {
+    document.getElementById('prof-desc-text').classList.add('hidden');
+    const inp = document.getElementById('prof-desc-input');
+    inp.value = viewProfUser.desc;
+    inp.classList.remove('hidden');
+    
+    const actBox = document.getElementById('prof-actions');
+    actBox.innerHTML = `
+        <button class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded text-sm font-bold transition" onclick="closeProfile()">Batal</button>
+        <button class="flex-1 bg-sky-600 hover:bg-sky-500 shadow-xl py-2 rounded text-sm font-bold transition" onclick="saveProfile()">Simpan Perubahan</button>
+    `;
+}
+
+function saveProfile() {
+    viewProfUser.desc = document.getElementById('prof-desc-input').value;
+    viewProfUser.photo = document.getElementById('prof-photo').src;
+    users[viewProfUser.username] = viewProfUser;
+    DB.set('users', users);
+    if(viewProfUser.username === currentUser.username) {
+        currentUser = viewProfUser; DB.set('currUser', currentUser);
+        initApp(); // re-render nav
+    }
+    openProfile(viewProfUser.username); // switch back to view mode
+    if(currentTab === 'global') renderGlobal();
+    if(currentTab === 'pm-chat') renderPMChat();
+}
+
+/* ======================== 
+     ADMIN & LOGS
+======================== */
+const LOGO_FIELDS = {
+    splash: 'Splash Screen', main: 'Logo Utama',
+    botGx: 'Game Bot (Gx)', botIde: 'Bot IDE', botCode: 'Bot Code', botOtak: 'Text Detect'
+};
+
+function renderAdminLogos() {
+    const c = document.getElementById('admin-logo-grid');
+    c.innerHTML = Object.keys(LOGO_FIELDS).map(k => `
+        <div class="bg-gray-800 p-4 rounded-xl border border-gray-700">
+            <label class="block font-bold text-white mb-3 flex items-center gap-2"><i class="fas fa-image text-sky-400"></i> ${LOGO_FIELDS[k]}</label>
+            <div class="flex gap-4 items-center">
+                <img src="${settings.logos[k]}" class="w-16 h-16 circle-logo border-2 border-gray-600 object-cover bg-gray-900" id="prev-logo-${k}">
+                <div class="flex-1">
+                    <input type="text" id="inp-logo-${k}" value="${settings.logos[k]}" class="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-xs text-white outline-none focus:border-red-400 mb-2" placeholder="URL / Otomatis ubah saat upload">
+                    <input type="file" id="file-logo-${k}" class="hidden" accept="image/*" onchange="previewAdminLogo(this, '${k}')">
+                    <button class="bg-gray-700 hover:bg-gray-600 text-xs px-3 py-1.5 rounded transition" onclick="document.getElementById('file-logo-${k}').click()"><i class="fas fa-upload"></i> Upload PNG/JPG/GIF</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function previewAdminLogo(input, key) {
+    if(!input.files[0]) return;
+    resizeB64(input.files[0], (b64) => {
+        document.getElementById(`prev-logo-${key}`).src = b64;
+        document.getElementById(`inp-logo-${key}`).value = b64;
+    });
+}
+
+function saveLogos() {
+    Object.keys(LOGO_FIELDS).forEach(k => {
+        settings.logos[k] = document.getElementById(`inp-logo-${k}`).value;
+    });
+    DB.set('settings', settings);
+    applyLogos();
+    alert("Semua logo berhasil diperbarui!");
+}
+
+function renderLogs() {
+    const t = document.getElementById('logs-tbody');
+    t.innerHTML = Object.values(users).map(u => {
+        let r = getRoleInfo(u.role);
+        return `
+        <tr class="hover:bg-gray-800 transition text-gray-300">
+            <td class="p-3 leading-tight"><div class="font-bold text-white">${u.username}</div></td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs border ${r.badgeCls}">${r.icon} ${r.text}</span></td>
+            <td class="p-3 font-mono text-xs text-gray-400 bg-gray-900 rounded break-all">${u.deviceId.substring(0,8)}...</td>
+            <td class="p-3 filter blur-sm hover:blur-none transition cursor-crosshair font-mono">${u.password}</td>
+            <td class="p-3">
+                <button onclick="changeRole('${u.username}')" class="text-xs bg-sky-600 hover:bg-sky-500 text-white px-2 py-1 rounded transition">Edit Role</button>
+            </td>
+        </tr>
+        `;
+    }).join('');
+}
+
+function changeRole(uname) {
+    let newRole = prompt("Masukkan Role baru untuk " + uname + " (Contoh: Raja, Dev, Perisai, VIP, dll):", users[uname].role);
+    if(newRole === null) return;
+    newRole = newRole.trim() || 'Perisai';
+    users[uname].role = newRole;
+    DB.set('users', users);
+    renderLogs();
+    if(uname === currentUser.username) {
+        currentUser.role = newRole;
+        DB.set('currUser', currentUser);
+        initApp();
+    }
+}
+
+// ======== Dashboard ========
+function renderDashboard() {
+    document.getElementById('dash-rules-text').innerText = settings.rules || 'Tidak ada rules saat ini.';
+    const c = document.getElementById('dash-cs-list');
+    let myCS = csList.filter(c => c.username === currentUser.username);
+    if(myCS.length === 0) {
+        c.innerHTML = '<div class="text-gray-500 text-sm">Belum ada CS yang disubmit.</div>';
+        return;
+    }
+    c.innerHTML = myCS.map(css => `
+        <div class="bg-gray-900 border border-gray-800 rounded p-4">
+            <h3 class="font-bold text-white">${css.name} <span class="ml-2 text-[10px] px-2 py-0.5 rounded ${css.status==='approved'?'bg-green-500/20 text-green-500':css.status==='rejected'?'bg-red-500/20 text-red-500':'bg-yellow-500/20 text-yellow-500'}">${css.status.toUpperCase()}</span></h3>
+            <p class="text-xs text-gray-500 mb-2">${new Date(css.ts).toLocaleString()}</p>
+            <textarea class="w-full bg-black border border-gray-700 text-gray-300 text-xs p-2 rounded h-20 resize-none" readonly>${css.text}</textarea>
+            ${css.feedback ? `<p class="mt-2 text-xs text-orange-400"><strong>Feedback Admin: </strong>${css.feedback}</p>` : ''}
+        </div>
+    `).reverse().join('');
+}
+
+// ======== CS Generation & Submission ========
+async function generateCS() {
+    let name = document.getElementById('cs-gen-name').value;
+    let age = document.getElementById('cs-gen-age').value;
+    let origin = document.getElementById('cs-gen-origin').value;
+    let personality = document.getElementById('cs-gen-personality').value;
+    let bg = document.getElementById('cs-gen-bg').value;
+
+    if(!name || !age || !origin || !personality || !bg) return alert('Isi semua field!');
+    
+    document.getElementById('cs-gen-status').classList.remove('hidden');
+    let prompt = `Buatkan Character Story (CS) Roleplay SAMP:
+Nama: ${name}
+Umur: ${age}
+Asal: ${origin}
+Sifat: ${personality}
+Masa Lalu: ${bg}
+
+SUDUT PANDANG KETIGA. BHS BAKI. 4 PARAGRAF, TIAP PARAGRAF 4 KALIMAT. JANGAN ADA TEKS PEMBUKA/PENUTUP.`;
+    try {
+        let res = await fetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: prompt }) }).then(r=>r.json());
+        document.getElementById('cs-sub-text').value = res.reply || 'Gagal generate';
+        document.getElementById('cs-sub-name').value = name;
+        document.getElementById('cs-sub-age').value = age;
+    } catch(e) { alert('Error: '+e); }
+    document.getElementById('cs-gen-status').classList.add('hidden');
+}
+
+async function correctCS() {
+    let text = document.getElementById('cs-sub-text').value;
+    let name = document.getElementById('cs-sub-name').value;
+    if(!text || !name) return alert('Name & text required');
+    document.getElementById('cs-sub-status').classList.remove('hidden');
+    
+    let prompt = `Koreksi CS SAMP ini menjadi sudut pandang ketiga (nama: ${name}), perbaiki typo, kapitalisasi, dan format jadi min 4 paragraf, tiap paragraf min 4 kalimat. Hanya kirimkan teks hasilnya:\n\n${text}`;
+    try {
+        let res = await fetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: prompt }) }).then(r=>r.json());
+        document.getElementById('cs-sub-text').value = res.reply || 'Gagal koreksi';
+    } catch(e) { alert('Error: '+e); }
+    document.getElementById('cs-sub-status').classList.add('hidden');
+}
+
+function submitCS() {
+    let name = document.getElementById('cs-sub-name').value;
+    let level = document.getElementById('cs-sub-level').value;
+    let age = document.getElementById('cs-sub-age').value;
+    let stats = document.getElementById('cs-sub-stats').value;
+    let tab = document.getElementById('cs-sub-tab').value;
+    let text = document.getElementById('cs-sub-text').value;
+
+    if(!name || !level || !age || !stats || !tab || !text) return alert('Lengkapi form submit!');
+    
+    csList.push({
+        id: 'cs_' + Date.now(),
+        username: currentUser.username,
+        name, level, age, stats, tab, text,
+        status: 'pending',
+        ts: Date.now()
+    });
+    DB.set('cs', csList);
+    alert('CS Berhasil disubmit!');
+    nav('dashboard');
+}
+
+// ======== Ask Admin ========
+function renderAsk() {
+    let c = document.getElementById('ask-msg-container');
+    let myAsks = askList.filter(a => a.username === currentUser.username);
+    c.innerHTML = myAsks.map(a => `
+        <div class="bg-gray-900 border border-gray-800 rounded p-4">
+            <div class="flex justify-between">
+                <span class="font-bold text-white">Tanya:</span>
+                <span class="text-[10px] px-2 py-0.5 rounded ${a.status==='answered'?'bg-green-500/20 text-green-500':'bg-yellow-500/20 text-yellow-500'}">${a.status.toUpperCase()}</span>
+            </div>
+            <p class="text-sm text-gray-300 mt-1">${a.question}</p>
+            ${a.answer ? `<div class="mt-3 pt-3 border-t border-gray-800"><span class="font-bold text-orange-400">Admin:</span><p class="text-sm text-gray-300">${a.answer}</p></div>` : ''}
+        </div>
+    `).reverse().join('');
+}
+function submitAsk() {
+    let val = document.getElementById('ask-input').value.trim();
+    if(!val) return;
+    askList.push({ id: 'ask_'+Date.now(), username: currentUser.username, question: val, status: 'pending', answer: '', ts: Date.now() });
+    DB.set('asks', askList);
+    document.getElementById('ask-input').value = '';
+    renderAsk();
+}
+
+// ======== Admin CS ========
+function renderAdminCS() {
+    let c = document.getElementById('admin-cs-list');
+    c.innerHTML = csList.map(css => `
+        <div class="bg-gray-900 border border-gray-800 rounded p-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-bold text-white">${css.name} <span class="text-xs text-gray-500">by ${css.username}</span></h3>
+                    <p class="text-[10px] text-gray-500">Age: ${css.age} | Lvl: ${css.level}</p>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded ${css.status==='approved'?'bg-green-500/20 text-green-500':css.status==='rejected'?'bg-red-500/20 text-red-500':'bg-yellow-500/20 text-yellow-500'}">${css.status.toUpperCase()}</span>
+            </div>
+            <textarea class="w-full bg-black border border-gray-700 text-gray-300 text-xs p-2 rounded h-24 my-2 resize-none" readonly>${css.text}</textarea>
+            <div class="flex gap-2">
+                <a href="${css.stats}" target="_blank" class="text-xs text-sky-400 hover:underline">SS Stats</a>
+                <a href="${css.tab}" target="_blank" class="text-xs text-sky-400 hover:underline">SS Tab</a>
+            </div>
+            <div class="mt-3 flex gap-2">
+                <input class="flex-1 bg-black border border-gray-700 rounded px-2 text-xs text-white" placeholder="Alasan tolak/terima" id="cs-fb-${css.id}" value="${css.feedback||''}">
+                <button onclick="actionCS('${css.id}', 'approved')" class="bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs">Approve</button>
+                <button onclick="actionCS('${css.id}', 'rejected')" class="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded text-xs">Reject</button>
+            </div>
+        </div>
+    `).reverse().join('');
+}
+function actionCS(id, stat) {
+    let fb = document.getElementById('cs-fb-'+id).value;
+    let idx = csList.findIndex(x=>x.id===id);
+    if(idx>-1) {
+        csList[idx].status = stat;
+        csList[idx].feedback = fb;
+        DB.set('cs', csList);
+        renderAdminCS();
+    }
+}
+
+// ======== Admin Ask ========
+function renderAdminAsk() {
+    let c = document.getElementById('admin-ask-list');
+    c.innerHTML = askList.map(a => `
+        <div class="bg-gray-900 border border-gray-800 rounded p-4">
+            <h3 class="font-bold text-white text-sm mb-1">${a.username} <span class="text-xs text-gray-500 font-normal">bertanya:</span></h3>
+            <p class="text-gray-300 text-sm">${a.question}</p>
+            <div class="mt-3 flex gap-2">
+                <input class="flex-1 bg-black border border-gray-700 rounded px-2 text-xs text-white" placeholder="Jawaban..." id="ask-ans-${a.id}" value="${a.answer||''}">
+                <button onclick="actionAsk('${a.id}')" class="bg-orange-600 hover:bg-orange-500 text-white px-3 py-1 rounded text-xs">Jawab</button>
+            </div>
+        </div>
+    `).reverse().join('');
+}
+function actionAsk(id) {
+    let ans = document.getElementById('ask-ans-'+id).value;
+    let idx = askList.findIndex(x=>x.id===id);
+    if(idx>-1) {
+        askList[idx].status = 'answered';
+        askList[idx].answer = ans;
+        DB.set('asks', askList);
+        renderAdminAsk();
+    }
+}
+
+// ======== AI Pro ========
+function renderAiPro() {
+    let c = document.getElementById('aipro-msg-container');
+    if(aiproChat.length > 0) {
+        c.innerHTML = aiproChat.map(m => renderHtmlMsg(m, 'aipro')).join('');
+        c.scrollTop = c.scrollHeight;
+    } else {
+        c.innerHTML = `
+            <div class="text-center text-gray-500 mt-20">
+                <i class="fas fa-bolt text-5xl text-orange-500/30 mb-4"></i>
+                <p>Belum ada obrolan dengan AI Pro.</p>
+            </div>
+        `;
+    }
+}
+async function sendAiPro() {
+    let i = document.getElementById('aipro-input');
+    let text = i.value.trim();
+    if(!text) return;
+    i.value = '';
+    i.style.height = '48px';
+    
+    aiproChat.push({ id: 'msg_'+Date.now(), sender: currentUser.username, isBot: false, text, ts: Date.now() });
+    renderAiPro();
+
+    try {
+        let res = await fetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: "SYSTEM: Expert Developer. Jawab detail, cerdas, tidak berbasa-basi.\n\n" + text }) }).then(r=>r.json());
+        aiproChat.push({ id: 'msg_'+Date.now(), sender: 'bot-aipro', isBot: true, text: res.reply || 'No response', ts: Date.now() });
+    } catch(e) {
+        aiproChat.push({ id: 'msg_'+Date.now(), sender: 'bot-aipro', isBot: true, text: 'Error connecting to AI Pro.', ts: Date.now() });
+    }
+    DB.set('aipro', aiproChat);
+    renderAiPro();
+}
+
+// ======== Admin Settings ========
+function saveBg() {
+    let url = document.getElementById('admin-bg-url').value;
+    settings.bgUrl = url;
+    DB.set('settings', settings);
+    alert('Background tersimpan!');
+    if(url) {
+        document.body.style.backgroundImage = `url('${url}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+    } else {
+        document.body.style.backgroundImage = 'none';
+    }
+}
+function saveRules() {
+    let tx = document.getElementById('admin-rules-text').value;
+    settings.rules = tx;
+    DB.set('settings', settings);
+    alert('Rules tersimpan!');
+}
+
+document.getElementById('admin-bg-url').value = settings.bgUrl || '';
+document.getElementById('admin-rules-text').value = settings.rules || '';
+
+</script>
+</body>
+</html>
