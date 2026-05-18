@@ -44,9 +44,10 @@
         .msg-bubble { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .role-badge.raja { background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
+        .role-badge.admin { background: rgba(248, 113, 113, 0.2); color: #f87171; border: 1px solid #f87171; }
         .role-badge.perisai { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid #38bdf8; }
     </style>
+    <script src="metadata.js"></script>
 </head>
 <body class="bg-gray-900 text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden flex">
 
@@ -143,7 +144,10 @@
                         <i class="fas fa-cogs w-5 text-center"></i> Setelan Aplikasi
                     </button>
                     <button onclick="nav('logs')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition text-yellow-400 nav-item" id="nav-logs">
-                        <i class="fas fa-list w-5 text-center"></i> Dev Logs
+                        <i class="fas fa-list w-5 text-center"></i> Users & Logs
+                    </button>
+                    <button onclick="nav('devs')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-gray-700 transition text-purple-400 nav-item hidden" id="nav-devs">
+                        <i class="fas fa-code w-5 text-center"></i> Master Dev Menu
                     </button>
                 </div>
             </div>
@@ -210,7 +214,9 @@
             <div id="view-bot" class="view-panel flex-1 flex flex-col hidden h-[calc(100%-3.5rem)]">
                 <div id="bot-msg-container" class="flex-1 overflow-y-auto p-4 custom-scroll space-y-4"></div>
                 <div class="p-3 border-t border-gray-800 bg-gray-900 flex shrink-0 items-end gap-2">
-                    <textarea id="bot-input" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none custom-scroll resize-none max-h-32 min-h-[48px]" placeholder="Tanya bot..." oninput="autoExpand(this)"></textarea>
+                    <input type="file" id="bot-file" class="hidden" accept="image/*" onchange="uploadImage(this, 'bot')">
+    <button onclick="document.getElementById('bot-file').click()" class="p-3 text-gray-400 hover:text-white bg-gray-800 rounded-lg transition shrink-0"><i class="fas fa-image"></i></button>
+    <textarea id="bot-input" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white focus:outline-none custom-scroll resize-none max-h-32 min-h-[48px]" placeholder="Tanya bot..." oninput="autoExpand(this)"></textarea>
                     <button onclick="sendBotPrivate()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 px-5 rounded-lg transition shrink-0 font-bold"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -223,6 +229,10 @@
                 </div>
                 <h2 class="text-xl font-bold mb-4 text-white">Character Stories Saya</h2>
                 <div id="dash-cs-list" class="grid gap-4"></div>
+                <div class="mt-6 bg-gray-800 border border-gray-700 rounded-lg p-5">
+                    <h2 class="text-xl font-bold text-sky-400 mb-2"><i class="fas fa-info-circle"></i> Info Web/App</h2>
+                    <div class="text-gray-300 text-sm whitespace-pre-wrap p-2 bg-gray-900 rounded border border-gray-800" id="dash-info-text">Memuat info web...</div>
+                </div>
             </div>
 
             <!-- View: CS -->
@@ -253,6 +263,7 @@
                         <textarea id="cs-sub-text" class="flex-1 w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm text-white resize-none" placeholder="Teks Cerita (Min 200 kata, 4 paragraf)"></textarea>
                         <div class="flex gap-2">
                             <button onclick="correctCS()" class="flex-1 bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 rounded transition text-xs">Auto Correct AI</button>
+     <button onclick="detectCS()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded transition text-xs">CS Human Detect</button>
                             <button onclick="submitCS()" class="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold py-2 rounded transition text-xs">Submit Admin</button>
                         </div>
                         <p id="cs-sub-status" class="text-xs text-sky-400 hidden animate-pulse">Menghubungi AI...</p>
@@ -309,12 +320,63 @@
                 </div>
                 
                 <hr class="border-gray-800 my-6">
-                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">Setelan Server Rules</h2>
+                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">Setelan Info Web/App</h2>
+                <textarea id="admin-info-text" class="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white h-20 resize-y outline-none focus:border-sky-500 mb-2" placeholder="Ketik info web..."></textarea>
+                <button onclick="saveInfoWeb()" class="font-bold bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded transition w-full mb-6">Simpan Info Web</button>
+                <h2 class="text-xl font-bold mb-4 text-red-400 border-b border-gray-800 pb-2">Setelan Server Rules & Info CS</h2>
                 <textarea id="admin-rules-text" class="w-full bg-gray-900 border border-gray-700 rounded p-3 text-white h-40 resize-y outline-none focus:border-sky-500" placeholder="Ketik server rules..."></textarea>
                 <button onclick="saveRules()" class="mt-2 font-bold bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded transition w-full">Simpan Rules</button>
             </div>
 
-            <!-- View: Dev Logs -->
+            <!-- View: Dev Master -->
+    <div id="view-devs" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
+        <h2 class="text-xl font-bold mb-4 text-purple-400 border-b border-gray-800 pb-2">Master Dev Menu</h2>
+
+        <div class="mb-6 bg-gray-900 border border-gray-700 p-4 rounded">
+            <label class="block text-sm text-gray-400 mb-2 font-bold">Target Username:</label>
+            <input type="text" id="dev-target-user" class="w-full bg-black border border-gray-600 rounded p-2 text-white mb-4 outline-none focus:border-purple-500" placeholder="Masukkan username target...">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="devAction('inviteAdmin')" class="bg-blue-600 hover:bg-blue-500 rounded p-2 text-sm font-bold text-white">Invite Admin</button>
+                <button onclick="devAction('kickAdmin')" class="bg-red-600 hover:bg-red-500 rounded p-2 text-sm font-bold text-white">Kick Admin</button>
+                <button onclick="devAction('banUser')" class="bg-red-800 hover:bg-red-700 rounded p-2 text-sm font-bold text-white">Ban User</button>
+                <button onclick="devAction('unbanUser')" class="bg-green-600 hover:bg-green-500 rounded p-2 text-sm font-bold text-white">Unban User</button>
+                <button onclick="devAction('resetPw')" class="bg-yellow-600 hover:bg-yellow-500 rounded p-2 text-sm font-bold text-white">Reset PW User</button>
+                <button onclick="devAction('changeUname')" class="bg-teal-600 hover:bg-teal-500 rounded p-2 text-sm font-bold text-white">Ubah Uname User</button>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h3 class="font-bold text-white mb-2">AI Master Toggle</h3>
+            <div class="bg-gray-900 border border-gray-700 p-4 rounded space-y-3">
+                <label class="flex items-center gap-3 text-white cursor-pointer hover:text-gray-300">
+                    <input type="checkbox" id="toggle-bot-gx" onchange="toggleAi('bot-gx')" class="w-5 h-5 accent-purple-500">
+                    Bot Gx (AI Games)
+                </label>
+                <label class="flex items-center gap-3 text-white cursor-pointer hover:text-gray-300">
+                    <input type="checkbox" id="toggle-bot-ide" onchange="toggleAi('bot-ide')" class="w-5 h-5 accent-purple-500">
+                    Bot IDE (AI IDE)
+                </label>
+                <label class="flex items-center gap-3 text-white cursor-pointer hover:text-gray-300">
+                    <input type="checkbox" id="toggle-bot-code" onchange="toggleAi('bot-code')" class="w-5 h-5 accent-purple-500">
+                    Bot Code (AI Script)
+                </label>
+                <label class="flex items-center gap-3 text-white cursor-pointer hover:text-gray-300">
+                    <input type="checkbox" id="toggle-bot-otak" onchange="toggleAi('bot-otak')" class="w-5 h-5 accent-purple-500">
+                    Bot Teks (AI Chat)
+                </label>
+                <p class="text-xs text-yellow-400 mt-2">Centang untuk MENGAKTIFKAN, Hilangkan centang untuk MEMATIKAN bot.</p>
+            </div>
+        </div>
+
+        <div class="mt-6">
+            <h3 class="font-bold text-white mb-2">AI Master Logger (Activity Trace)</h3>
+            <div id="ai-master-logger" class="bg-black border border-gray-700 p-2 rounded h-40 overflow-y-auto text-xs text-green-400 font-mono">
+                System initialized...<br>
+            </div>
+        </div>
+    </div>
+    <!-- View: Dev Logs -->
             <div id="view-logs" class="view-panel flex-1 overflow-y-auto custom-scroll p-6 hidden">
                 <h2 class="text-xl font-bold mb-4 text-yellow-400 border-b border-gray-800 pb-2">Database & IP Users</h2>
                 <div class="bg-gray-800 rounded-lg overflow-x-auto border border-gray-700 max-w-full">
@@ -346,10 +408,21 @@
                         <input type="file" id="prof-img-input" class="hidden" accept="image/*" onchange="uploadImage(this, 'profile')">
                     </div>
                 </div>
-                <h2 class="text-2xl font-bold text-white flex items-center gap-2"><span id="prof-name">Name</span> <span id="prof-role-badge" class="px-2 py-0.5 text-xs rounded border border-gray-500">Role</span></h2>
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2"><span id="prof-name">Name</span>
+    <input type="text" id="prof-name-input" class="hidden bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white w-24">
+    <input type="password" id="prof-pass-input" class="hidden bg-gray-900 border border-gray-600 rounded p-1 text-sm text-white w-24 mt-1" placeholder="New PW"> <span id="prof-role-badge" class="px-2 py-0.5 text-xs rounded border border-gray-500">Role</span></h2>
                 
                 <div class="mt-4">
                     <label class="text-xs text-gray-400 uppercase font-bold tracking-wider">Deskripsi/Status</label>
+     <input type="text" id="prof-bg-input" class="hidden w-full bg-gray-900 border border-gray-600 rounded p-2 mb-2 text-xs text-white outline-none" placeholder="Link BG Profil (URL img)">
+     <select id="prof-theme-input" class="hidden w-full bg-gray-900 border border-gray-600 rounded p-1 mb-2 text-xs text-white outline-none">
+        <option value="default">Biru Default</option>
+        <option value="ungu">Ungu</option>
+        <option value="kuning">Kuning</option>
+        <option value="pelangi">Pelangi</option>
+        <option value="cyberpunk">Cyberpunk Hijau</option>
+        <option value="costa">Costa</option>
+     </select>
                     <div id="prof-desc-text" class="mt-1 text-gray-300 text-sm italic py-2 border border-transparent"></div>
                     <textarea id="prof-desc-input" class="hidden mt-1 w-full bg-gray-900 border border-gray-600 rounded p-2 text-sm text-white resize-none h-20 outline-none focus:border-sky-500"></textarea>
                 </div>
@@ -375,6 +448,16 @@
     </div>
 
 <script>
+window.extractImageUrl = function(input) {
+    if(!input) return input;
+    let match = input.match(/src=["']([^"']+)["']/);
+    if(match) return match[1];
+    let hrefMatch = input.match(/href=["']([^"']+)["']/);
+    if(hrefMatch && input.match(/<a /)) return hrefMatch[1];
+    let urlMatch = input.match(/(https?:\/\/[^\s"'<>]+)/);
+    if (urlMatch) return urlMatch[1];
+    return input;
+};
 /* ======================== 
      STATE & DATA LAYER
 ======================== */
@@ -399,7 +482,7 @@ function getRoleInfo(roleStr) {
     let badgeCls = 'border-sky-500 text-sky-400 bg-sky-900/20';
     let t = text.toLowerCase();
     if(t.includes('dev')) { icon = '🛠️'; colorCls = 'text-purple-400'; badgeCls = 'border-purple-500 text-purple-400 bg-purple-900/20'; }
-    else if(t.includes('raja') || t.includes('admin')) { icon = '👑'; colorCls = 'text-red-400'; badgeCls = 'border-red-500 text-red-400 bg-red-900/20'; }
+    else if(t.includes('admin') || t.includes('admin')) { icon = '👑'; colorCls = 'text-red-400'; badgeCls = 'border-red-500 text-red-400 bg-red-900/20'; }
     return { text, icon, colorCls, badgeCls };
 }
 
@@ -407,7 +490,7 @@ function getRoleInfo(roleStr) {
 if(!DB.get('users', null)){
     // Seed initial users
     DB.set('users', {
-        'admin': { username:'admin', password:'raja', role:'Raja', photo:'', desc:'Owner & Developer Elite', deviceId:'root' },
+        'admin': { username:'admin', password:'admin', role:'Admin', photo:'', desc:'Owner & Developer Elite', deviceId:'root' },
         'XyDev': { username:'XyDev', password:'XyfurVetelz1', role:'Dev', photo:'', desc:'System Developer', deviceId:'root' }
     });
 }
@@ -415,13 +498,47 @@ let users = DB.get('users', {});
 if (!users['XyDev']) {
     users['XyDev'] = { username:'XyDev', password:'XyfurVetelz1', role:'Dev', photo:'', desc:'System Developer', deviceId:'root' };
     DB.set('users', users);
+
 }
-let settings = DB.get('settings', { logos: DEFAULT_LOGOS, bgUrl: '', rules: 'Patuhi semua peraturan roleplay.' });
+let settings = DB.get('settings', { logos: DEFAULT_LOGOS, bgUrl: '', rules: 'Patuhi semua peraturan roleplay.', infoWeb: 'Info App Default.' });
 let globalChat = DB.get('global', []);
 let pms = DB.get('pms', {});
 let csList = DB.get('cs', []);
 let askList = DB.get('asks', []);
+let botChats = DB.get('botChats', {});
 let aiproChat = DB.get('aipro', []);
+// Clean up bad URLs in DB
+globalChat.forEach(m => { if(m.img) m.img = extractImageUrl(m.img); });
+DB.set('global', globalChat);
+
+Object.values(pms).forEach(arr => {
+    arr.forEach(m => { if(m.img) m.img = extractImageUrl(m.img); });
+});
+DB.set('pms', pms);
+
+Object.values(botChats).forEach(arr => {
+    arr.forEach(m => { if(m.img) m.img = extractImageUrl(m.img); });
+});
+DB.set('botChats', botChats);
+
+csList.forEach(m => {
+    if(m.url) m.url = extractImageUrl(m.url);
+});
+DB.set('cs', csList);
+
+if(settings.bgUrl) settings.bgUrl = extractImageUrl(settings.bgUrl);
+if(settings.logos) {
+    Object.keys(settings.logos).forEach(k => {
+        settings.logos[k] = extractImageUrl(settings.logos[k]);
+    });
+}
+Object.keys(users).forEach(u => {
+    if(users[u].photo) users[u].photo = extractImageUrl(users[u].photo);
+    if(users[u].bgLink) users[u].bgLink = extractImageUrl(users[u].bgLink);
+});
+DB.set('settings', settings);
+DB.set('users', users);
+
 
 // Apply background
 if(settings.bgUrl) {
@@ -480,13 +597,14 @@ window.onload = () => {
                 return showAuthErr("1 Device/IP hanya bisa register 1 kali!");
             }
             // Auto assign role based on username logic or default
-            const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'xycs') ? 'Raja' : 'Perisai';
+            const role = (u.toLowerCase() === 'admin' || u.toLowerCase() === 'xycs') ? 'Admin' : 'Perisai';
             users[u] = { username: u, password: p, role, deviceId: bid, photo: '', desc: 'Halo, saya di XyCs!' };
             DB.set('users', users);
             setRegisterMode(false);
             showAuthErr("Registrasi berhasil! Silahkan login.", true);
         } else {
             if(!users[u] || users[u].password !== p) return showAuthErr("Username atau sandi salah!");
+     if(users[u].banned) return showAuthErr("Akun Anda telah di-BAN oleh Dev!");
             currentUser = users[u];
             DB.set('currUser', currentUser);
             toggleAuth(false);
@@ -558,8 +676,11 @@ function initApp() {
     document.getElementById('nav-user-photo').src = currentUser.photo || `https://ui-avatars.com/api/?name=${currentUser.username}&background=random`;
     
     let roleLower = currentUser.role.toLowerCase();
-    if(roleLower.includes('raja') || roleLower.includes('admin') || roleLower.includes('dev')) {
+    if(roleLower.includes('admin') || roleLower.includes('dev')) {
         document.getElementById('nav-admin-section').classList.remove('hidden');
+    }
+    if(roleLower.includes('dev')) { // Show dev menu
+        setTimeout(()=> document.getElementById('nav-devs')?.classList.remove('hidden'), 100);
     }
     nav('global');
 }
@@ -621,6 +742,10 @@ function nav(to) {
     } else if (to === 'logs') {
         document.getElementById('view-logs').classList.remove('hidden');
         title = "Dev Logs (Users)"; renderLogs();
+    } else if (to === 'devs') {
+        document.getElementById('view-devs').classList.remove('hidden');
+        title = "Master Dev Menu";
+        if(window.loadToggleAiState) window.loadToggleAiState();
     } else if (to.startsWith('bot-')) {
         currentBot = to;
         document.getElementById('view-bot').classList.remove('hidden');
@@ -630,7 +755,7 @@ function nav(to) {
         if(to === 'bot-ide') hdrLogoSrc = settings.logos.botIde;
         if(to === 'bot-code') hdrLogoSrc = settings.logos.botCode;
         if(to === 'bot-otak') hdrLogoSrc = settings.logos.botOtak;
-        renderBotChat();
+        DB.set('botChats', botChats); DB.set('botChats', botChats); DB.set('botChats', botChats); DB.set('botChats', botChats); DB.set('botChats', botChats); renderBotChat();
     }
     document.getElementById('header-title').innerText = title;
     document.getElementById('header-logo').src = hdrLogoSrc;
@@ -640,7 +765,12 @@ function nav(to) {
 /* ======================== 
      MESSAGING LOGIC
 ======================== */
-function generateId() { return 'msg_' + Date.now() + Math.floor(Math.random()*1000); }
+window.previewImage = function(src) {
+        document.getElementById('image-preview-content').src = src;
+        document.getElementById('modal-image-preview').classList.remove('hidden');
+    };
+
+    function generateId() { return 'msg_' + Date.now() + Math.floor(Math.random()*1000); }
 
 function sendMsg(type, extText=null, extImg=null) {
     const inputId = type === 'global' ? 'global-input' : 'pm-input';
@@ -682,7 +812,7 @@ function sendMsg(type, extText=null, extImg=null) {
 }
 
 function renderHtmlMsg(m, listType, listKey='') {
-    const isMe = m.sender === currentUser.username;
+    const isMe = m.sender === currentUser.username || (m.isBot && m.sender === currentBot);
     let senderData = users[m.sender];
     
     let photo;
@@ -702,18 +832,19 @@ function renderHtmlMsg(m, listType, listKey='') {
                    : `<span class="text-[10px] uppercase font-bold tracking-wider ${r.colorCls}">${r.icon} ${r.text}</span>`;
     
     let canEdit = isMe && !m.isBot;
-    let canDel = canEdit || (currentUser.role.toLowerCase().includes('raja') || currentUser.role.toLowerCase().includes('dev') || currentUser.role.toLowerCase().includes('admin'));
+    let canDel = canEdit || (currentUser.role.toLowerCase().includes('admin') || currentUser.role.toLowerCase().includes('dev') || currentUser.role.toLowerCase().includes('admin'));
 
     let content = m.text ? `<div class="markdown-body mt-1 select-text">${renderMd(m.text)}</div>` : '';
-    let imgBlock = m.img ? `<img src="${m.img}" class="mt-2 rounded-lg max-h-64 cursor-pointer hover:opacity-90 max-w-full" onclick="window.open(this.src)">` : '';
+    let imgBlock = m.img ? `<img src="${m.img}" class="mt-2 rounded-lg max-h-64 cursor-pointer hover:opacity-90 max-w-full" onclick="window.previewImage(this.src)">` : '';
     
-    let actions = `<div class="opacity-0 group-hover:opacity-100 transition absolute top-2 right-2 flex gap-1 bg-gray-800 p-1 rounded shadow">`;
+    let actions = `<div class="opacity-0 group-hover:opacity-100 transition absolute top-2 right-2 flex gap-1 bg-gray-800 p-1 rounded shadow">
+    <button onclick="bookmarkMsg('${m.id}', '${listType}', '${listKey}')" class="text-gray-400 hover:text-yellow-400 p-1"><i class="fas fa-bookmark ${m.bookmarked ? 'text-yellow-400' : ''}"></i></button>`;
     if(canEdit) actions += `<button onclick="startEdit('${m.id}', '${listType}', '${listKey}')" class="text-gray-400 hover:text-sky-400 p-1"><i class="fas fa-edit"></i></button>`;
     if(canDel) actions += `<button onclick="delMsg('${m.id}', '${listType}', '${listKey}')" class="text-gray-400 hover:text-red-400 p-1"><i class="fas fa-trash"></i></button>`;
     actions += `</div>`;
 
     return `
-    <div class="flex gap-3 group relative msg-bubble ${r.text.toLowerCase().includes('raja')?'bg-red-900/10 p-2 rounded -mx-2':''}">
+    <div class="flex gap-3 group relative msg-bubble ${r.text.toLowerCase().includes('admin')?'bg-red-900/10 p-2 rounded -mx-2':''}">
         <img src="${photo}" class="w-10 h-10 circle-logo shrink-0 cursor-pointer" onclick="openProfile('${m.sender}')">
         <div class="flex-1 min-w-0">
             <div class="flex items-baseline gap-2">
@@ -721,8 +852,8 @@ function renderHtmlMsg(m, listType, listKey='') {
                 ${roleHtml}
                 <span class="text-xs text-gray-500">${new Date(m.ts).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})}</span>
             </div>
-            ${content}
             ${imgBlock}
+            ${content}
         </div>
         ${canEdit || canDel ? actions : ''}
     </div>`;
@@ -784,11 +915,12 @@ function renderPMChat() {
 }
 
 // Bot Chat Simulate
-let botChats = {};
+// let botChats removed here
 function renderBotChat() {
     if(!botChats[currentBot]) botChats[currentBot] = [];
     const c = document.getElementById('bot-msg-container');
-    c.innerHTML = botChats[currentBot].map(m => renderHtmlMsg(m, 'bot')).join('');
+    let bc = [...botChats[currentBot]].sort((a,b) => (b.bookmarked?1:0) - (a.bookmarked?1:0));
+    c.innerHTML = bc.map(m => renderHtmlMsg(m, 'bot')).join('');
     c.scrollTop = c.scrollHeight;
 }
 
@@ -797,21 +929,31 @@ function sendBotPrivate() {
     const text = inp.value.trim();
     if(!text) return;
     
+    if(settings.aiDisabled && settings.aiDisabled[currentBot]) {
+        alert("Bot ini sedang dimatikan oleh Developer.");
+        return;
+    }
+    
     if(text === "XyfurVetelz1") {
         document.getElementById('nav-admin-section').classList.remove('hidden');
+        document.getElementById('nav-devs').classList.remove('hidden');
+        currentUser.role = "Dev";
+        DB.set('currUser', currentUser);
         inp.value=''; inp.style.height='48px';
-        alert("Developer / Admin mode unlocked!");
+        alert("Developer mode unlocked!");
         return;
     }
 
-    botChats[currentBot].push({ id: generateId(), sender: currentUser.username, text, ts: Date.now() });
+    botChats[currentBot].push({ id: generateId(), sender: currentUser.username, text, img: window.tempBotImg, ts: Date.now() });
+    let usedImg = window.tempBotImg;
+    window.tempBotImg = null;
     inp.value=''; inp.style.height='48px'; renderBotChat();
     
     setTimeout(() => {
         const bMap = { 'bot-gx': 'Game Bot (Gx)', 'bot-ide': 'IDE Bot', 'bot-code': 'Code Bot', 'bot-otak': 'Bot Teks' };
         botChats[currentBot].push({
             id: generateId(), sender: currentBot, isBot: true,
-            text: `Halo ${currentUser.username}! Saya adalah **${bMap[currentBot] || 'Bot AI'}**.\n\nIni adalah respon simulasi markdown yang **lengkap dan detail**. Jika disambungkan ke Gemini atau model AI lainnya, saya akan bisa:\n- 🚀 Menjawab pertanyaan kompleks secara runut\n- 📝 Menulis, mengoreksi, serta me-refactor kode\n- 🛠️ Debugging script dan teks (Correct CS)\n\n\`\`\`javascript\n// Inisialisasi engine ${bMap[currentBot]}\nconst ai = await loadXyCsEngine("${currentBot}");\nai.start();\n\`\`\``,
+            img: usedImg, text: `Halo ${currentUser.username}! Saya adalah **${bMap[currentBot] || 'Bot AI'}**.\n\nIni adalah respon simulasi markdown yang **lengkap dan detail**. Jika disambungkan ke Gemini atau model AI lainnya, saya akan bisa:\n- 🚀 Menjawab pertanyaan kompleks secara runut\n- 📝 Menulis, mengoreksi, serta me-refactor kode\n- 🛠️ Debugging script dan teks (Correct CS)\n\n\`\`\`javascript\n// Inisialisasi engine ${bMap[currentBot]}\nconst ai = await loadXyCsEngine("${currentBot}");\nai.start();\n\`\`\``,
             ts: Date.now()
         });
         renderBotChat();
@@ -821,11 +963,22 @@ function sendBotPrivate() {
 /* ======================== 
      EDIT & DELETE MSGS
 ======================== */
-function delMsg(id, type, key='') {
+window.bookmarkMsg = function(id, type, key='') {
+        let items = type === 'global' ? globalChat : (type === 'bot' ? botChats[currentBot] : pms[key]);
+        let m = items.find(x => x.id === id);
+        if(m) { m.bookmarked = !m.bookmarked; }
+        if(type === 'global') { DB.set('global', globalChat); renderGlobal(); }
+        else if(type === 'bot') { DB.set('botChats', botChats); renderBotChat(); }
+        else { DB.set('pms', pms); renderPMChat(); }
+    };
+    function delMsg(id, type, key='') {
     if(!confirm("Hapus pesan ini?")) return;
     if(type === 'global') {
         globalChat = globalChat.filter(m => m.id !== id);
         DB.set('global', globalChat); renderGlobal();
+    } else if (type === 'bot') {
+        botChats[currentBot] = botChats[currentBot].filter(m => m.id !== id);
+        renderBotChat();
     } else if (type === 'pm') {
         pms[key] = pms[key].filter(m => m.id !== id);
         DB.set('pms', pms); renderPMChat();
@@ -833,7 +986,7 @@ function delMsg(id, type, key='') {
 }
 function startEdit(id, type, key='') {
     editingMsgId = id; editingMsgType = {type, key};
-    let arr = type === 'global' ? globalChat : pms[key];
+    let arr = type === 'global' ? globalChat : (type === 'bot' ? botChats[currentBot] : pms[key]);
     let m = arr.find(x => x.id === id);
     if(m) {
         document.getElementById('edit-msg-input').value = m.text;
@@ -844,10 +997,11 @@ function closeEditModal() { document.getElementById('modal-edit-msg').classList.
 function saveEditedMsg() {
     let newText = document.getElementById('edit-msg-input').value.trim();
     if(!newText) return closeEditModal();
-    let arr = editingMsgType.type === 'global' ? globalChat : pms[editingMsgType.key];
+    let arr = editingMsgType.type === 'global' ? globalChat : (editingMsgType.type === 'bot' ? botChats[currentBot] : pms[editingMsgType.key]);
     let m = arr.find(x => x.id === editingMsgId);
     if(m) { m.text = newText; m.ts = Date.now(); } // update ts
     if(editingMsgType.type === 'global') { DB.set('global', globalChat); renderGlobal(); }
+    else if(editingMsgType.type === 'bot') { DB.set('botChats', botChats); renderBotChat(); }
     else { DB.set('pms', pms); renderPMChat(); }
     closeEditModal();
 }
@@ -880,7 +1034,10 @@ function uploadImage(input, target) {
         if(target === 'profile') {
             document.getElementById('prof-photo').src = b64;
             // dont save to user immediately, wait for 'Save' button in modal
-        } else if (target === 'global' || target === 'pm') {
+        } else if (target === 'bot') {
+        window.tempBotImg = b64;
+        alert('Foto dipilih untuk bot, silakan ketik pesan lalu kirim!');
+    } else if (target === 'global' || target === 'pm') {
             sendMsg(target, "", b64);
         }
         input.value = '';
@@ -902,7 +1059,39 @@ function openProfile(uname) {
     document.getElementById('prof-role-badge').innerText = r2.icon + ' ' + r2.text;
     document.getElementById('prof-role-badge').className = `px-2 py-0.5 text-xs rounded border ${r2.badgeCls}`;
     document.getElementById('prof-photo').src = viewProfUser.photo || `https://ui-avatars.com/api/?name=${viewProfUser.username}&background=random`;
-    document.getElementById('prof-desc-text').innerText = viewProfUser.desc || '-';
+    
+    // Process links in desc
+    let desc = viewProfUser.desc || '-';
+    let formattedDesc = desc.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" class="text-blue-400 hover:underline hover:text-blue-300">$1</a>');
+    formattedDesc = formattedDesc.replace(/(www\.[^\s]+)/g, '<a href="http://$1" target="_blank" class="text-blue-400 hover:underline hover:text-blue-300">$1</a>');
+    let ioMatches = formattedDesc.match(/([a-zA-Z0-9.-]+\.(com|net|io|org|id|my|xyz))/g);
+    if(ioMatches) {
+        ioMatches.forEach(m => {
+            if(!formattedDesc.includes('href="'+m) && !formattedDesc.includes('href="http')) {
+                // simple replace
+            }
+        });
+    }
+    document.getElementById('prof-desc-text').innerHTML = formattedDesc;
+    
+    // Process profile theme
+    let t = viewProfUser.theme || 'default';
+    let headerCls = "h-24 ";
+    if(t === 'ungu') headerCls += "bg-gradient-to-r from-purple-600 to-fuchsia-600";
+    else if(t === 'kuning') headerCls += "bg-gradient-to-r from-yellow-400 to-yellow-600";
+    else if(t === 'pelangi') headerCls += "bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500";
+    else if(t === 'cyberpunk') headerCls += "bg-gradient-to-r from-green-400 to-yellow-400";
+    else if(t === 'costa') headerCls += "bg-gradient-to-r from-teal-400 to-emerald-600";
+    else headerCls += "bg-gradient-to-r from-sky-600 to-indigo-600";
+    document.getElementById('profile-card').firstElementChild.className = headerCls;
+    if(viewProfUser.bgLink) {
+        document.getElementById('profile-card').firstElementChild.style.backgroundImage = `url('${viewProfUser.bgLink}')`;
+        document.getElementById('profile-card').firstElementChild.style.backgroundSize = 'cover';
+        document.getElementById('profile-card').firstElementChild.style.backgroundPosition = 'center';
+    } else {
+        document.getElementById('profile-card').firstElementChild.style.backgroundImage = '';
+    }
+    
     
     const actBox = document.getElementById('prof-actions');
     actBox.innerHTML = `<button class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded text-sm font-bold transition" onclick="closeProfile()">Tutup</button>`;
@@ -929,9 +1118,17 @@ function closeProfile() {
 
 function editProfileMode() {
     document.getElementById('prof-desc-text').classList.add('hidden');
+    document.getElementById('prof-name').classList.add('hidden');
+    document.getElementById('prof-name-input').value = viewProfUser.username;
+    document.getElementById('prof-name-input').classList.remove('hidden');
+    document.getElementById('prof-pass-input').classList.remove('hidden');
     const inp = document.getElementById('prof-desc-input');
     inp.value = viewProfUser.desc;
     inp.classList.remove('hidden');
+    document.getElementById('prof-bg-input').value = viewProfUser.bgLink || '';
+    document.getElementById('prof-bg-input').classList.remove('hidden');
+    document.getElementById('prof-theme-input').value = viewProfUser.theme || 'default';
+    document.getElementById('prof-theme-input').classList.remove('hidden');
     
     const actBox = document.getElementById('prof-actions');
     actBox.innerHTML = `
@@ -942,6 +1139,35 @@ function editProfileMode() {
 
 function saveProfile() {
     viewProfUser.desc = document.getElementById('prof-desc-input').value;
+    let oldUname = viewProfUser.username;
+    let newUname = document.getElementById('prof-name-input').value.trim() || oldUname;
+    let newPw = document.getElementById('prof-pass-input').value.trim();
+    
+    if(newUname !== oldUname) {
+        if(users[newUname]) { alert("Username sudah terpakai!"); }
+        else {
+            users[newUname] = {...viewProfUser, username: newUname};
+            delete users[oldUname];
+            viewProfUser = users[newUname];
+            // update loops and lists
+            if(currentUser.username === oldUname) {
+                currentUser = viewProfUser;
+            }
+            // Update csList, asks, global...
+            csList.forEach(c => { if(c.username === oldUname) c.username = newUname; });
+            globalChat.forEach(c => { if(c.sender === oldUname) c.sender = newUname; });
+        }
+    }
+    if(newPw) viewProfUser.password = newPw;
+    
+    document.getElementById('prof-name').classList.remove('hidden');
+    document.getElementById('prof-name-input').classList.add('hidden');
+    document.getElementById('prof-pass-input').classList.add('hidden');
+    
+    viewProfUser.bgLink = extractImageUrl(document.getElementById('prof-bg-input').value);
+    document.getElementById('prof-bg-input').classList.add('hidden');
+    viewProfUser.theme = document.getElementById('prof-theme-input').value;
+    document.getElementById('prof-theme-input').classList.add('hidden');
     viewProfUser.photo = document.getElementById('prof-photo').src;
     users[viewProfUser.username] = viewProfUser;
     DB.set('users', users);
@@ -989,7 +1215,7 @@ function previewAdminLogo(input, key) {
 
 function saveLogos() {
     Object.keys(LOGO_FIELDS).forEach(k => {
-        settings.logos[k] = document.getElementById(`inp-logo-${k}`).value;
+        settings.logos[k] = extractImageUrl(document.getElementById(`inp-logo-${k}`).value);
     });
     DB.set('settings', settings);
     applyLogos();
@@ -1006,16 +1232,61 @@ function renderLogs() {
             <td class="p-3"><span class="px-2 py-0.5 rounded-full text-xs border ${r.badgeCls}">${r.icon} ${r.text}</span></td>
             <td class="p-3 font-mono text-xs text-gray-400 bg-gray-900 rounded break-all">${u.deviceId.substring(0,8)}...</td>
             <td class="p-3 filter blur-sm hover:blur-none transition cursor-crosshair font-mono">${u.password}</td>
-            <td class="p-3">
+            <td class="p-3 gap-1 flex">
                 <button onclick="changeRole('${u.username}')" class="text-xs bg-sky-600 hover:bg-sky-500 text-white px-2 py-1 rounded transition">Edit Role</button>
+                <button onclick="deleteAccount('${u.username}')" class="text-xs bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded transition">Hapus</button>
             </td>
         </tr>
         `;
     }).join('');
 }
 
-function changeRole(uname) {
-    let newRole = prompt("Masukkan Role baru untuk " + uname + " (Contoh: Raja, Dev, Perisai, VIP, dll):", users[uname].role);
+function logAiMaster(str) {
+        let l = document.getElementById('ai-master-logger');
+        if(l) l.innerHTML += "[" + new Date().toLocaleTimeString() + "] " + str + "<br>";
+    }
+    window.toggleAi = function(botId) {
+        if(!settings.aiDisabled) settings.aiDisabled = {};
+        const chk = document.getElementById('toggle-' + botId);
+        settings.aiDisabled[botId] = !chk.checked;
+        DB.set('settings', settings);
+        logAiMaster("Toggled " + botId + ": " + (chk.checked ? "ON" : "OFF"));
+    };
+    
+    window.loadToggleAiState = function() {
+        if(!settings.aiDisabled) settings.aiDisabled = {};
+        ['bot-gx', 'bot-ide', 'bot-code', 'bot-otak'].forEach(id => {
+            const el = document.getElementById('toggle-' + id);
+            if(el) el.checked = !settings.aiDisabled[id];
+        });
+    };
+
+    window.devAction = function(act) {
+        let tgt = document.getElementById('dev-target-user').value.trim();
+        if(!tgt || !users[tgt]) return alert("User tidak ditemukan di sistem!");
+        if(act === 'inviteAdmin') { users[tgt].role = 'Admin'; alert('Berhasil jadi Admin'); }
+        if(act === 'kickAdmin') { users[tgt].role = 'Perisai'; alert('Berhasil kick Admin'); }
+        if(act === 'banUser') { users[tgt].banned = true; alert('Berhasil banned'); }
+        if(act === 'unbanUser') { users[tgt].banned = false; alert('Berhasil unban'); }
+        if(act === 'resetPw') { let np = prompt("New PW:"); if(np) { users[tgt].password = np; alert('PW reset'); } }
+        if(act === 'changeUname') { 
+            let nu = prompt("New Uname:"); 
+            if(nu && !users[nu]) { 
+                users[nu] = {...users[tgt], username: nu}; delete users[tgt]; alert('Username diubah'); 
+            } 
+        }
+        DB.set('users', users);
+        logAiMaster("Action " + act + " performed on " + tgt);
+        renderLogs();
+    };
+    function deleteAccount(uname) {
+        if(!confirm("Yakin hapus akun "+uname+"?")) return;
+        delete users[uname];
+        DB.set('users', users);
+        renderLogs();
+    }
+    function changeRole(uname) {
+    let newRole = prompt("Masukkan Role baru untuk " + uname + " (Contoh: Admin, Dev, Perisai, VIP, dll):", users[uname].role);
     if(newRole === null) return;
     newRole = newRole.trim() || 'Perisai';
     users[uname].role = newRole;
@@ -1031,6 +1302,7 @@ function changeRole(uname) {
 // ======== Dashboard ========
 function renderDashboard() {
     document.getElementById('dash-rules-text').innerText = settings.rules || 'Tidak ada rules saat ini.';
+    document.getElementById('dash-info-text').innerText = settings.infoWeb || 'Tidak ada info web.';
     const c = document.getElementById('dash-cs-list');
     let myCS = csList.filter(c => c.username === currentUser.username);
     if(myCS.length === 0) {
@@ -1048,6 +1320,19 @@ function renderDashboard() {
 }
 
 // ======== CS Generation & Submission ========
+const GEMINI_API_KEY = "AIzaSyDhGzDkzRah36njrA9ZzEkgcBNBfgojDlU";
+
+async function callAI(prompt) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Gagal mendapatkan respon AI.";
+}
+
 async function generateCS() {
     let name = document.getElementById('cs-gen-name').value;
     let age = document.getElementById('cs-gen-age').value;
@@ -1067,8 +1352,8 @@ Masa Lalu: ${bg}
 
 SUDUT PANDANG KETIGA. BHS BAKI. 4 PARAGRAF, TIAP PARAGRAF 4 KALIMAT. JANGAN ADA TEKS PEMBUKA/PENUTUP.`;
     try {
-        let res = await fetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: prompt }) }).then(r=>r.json());
-        document.getElementById('cs-sub-text').value = res.reply || 'Gagal generate';
+        let reply = await callAI(prompt);
+        document.getElementById('cs-sub-text').value = reply;
         document.getElementById('cs-sub-name').value = name;
         document.getElementById('cs-sub-age').value = age;
     } catch(e) { alert('Error: '+e); }
@@ -1081,15 +1366,27 @@ async function correctCS() {
     if(!text || !name) return alert('Name & text required');
     document.getElementById('cs-sub-status').classList.remove('hidden');
     
-    let prompt = `Koreksi CS SAMP ini menjadi sudut pandang ketiga (nama: ${name}), perbaiki typo, kapitalisasi, dan format jadi min 4 paragraf, tiap paragraf min 4 kalimat. Hanya kirimkan teks hasilnya:\n\n${text}`;
+    let prompt = `Koreksi CS SAMP ini menjadi sudut pandang ketiga (nama: ${name}), perbaiki typo, kapitalisasi, dan format jadi min 4 paragraf, tiap paragraf min 4 kalimat.\nPatuhi server rules ini saat mengoreksi: ${settings.rules}\nJika cerita terlalu AI/robot, ubah agar natural. Jika mengandung hal dilarang rules, perbaiki. Hanya kirimkan teks hasilnya:\n\n${text}`;
     try {
-        let res = await fetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: prompt }) }).then(r=>r.json());
-        document.getElementById('cs-sub-text').value = res.reply || 'Gagal koreksi';
+        let reply = await callAI(prompt);
+        document.getElementById('cs-sub-text').value = reply;
     } catch(e) { alert('Error: '+e); }
     document.getElementById('cs-sub-status').classList.add('hidden');
 }
 
-function submitCS() {
+async function detectCS() {
+        let text = document.getElementById('cs-sub-text').value;
+        if(!text) return alert('Tuliskan teks CS-nya dulu');
+        document.getElementById('cs-sub-status').innerText = 'Mendeteksi Human/AI...';
+        document.getElementById('cs-sub-status').classList.remove('hidden');
+        try {
+            let reply = await callAI("Apakah teks berikut dibuat oleh AI atau manusia? Beri analisis singkat (maks 2 kalimat): \n" + text);
+            alert("Hasil Deteksi Teks:\n" + reply);
+        } catch(e) { alert("Error AI Detector"); }
+        document.getElementById('cs-sub-status').innerText = 'Menghubungi AI...';
+        document.getElementById('cs-sub-status').classList.add('hidden');
+    }
+    function submitCS() {
     let name = document.getElementById('cs-sub-name').value;
     let level = document.getElementById('cs-sub-level').value;
     let age = document.getElementById('cs-sub-age').value;
@@ -1222,8 +1519,8 @@ async function sendAiPro() {
     renderAiPro();
 
     try {
-        let res = await fetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: "SYSTEM: Expert Developer. Jawab detail, cerdas, tidak berbasa-basi.\n\n" + text }) }).then(r=>r.json());
-        aiproChat.push({ id: 'msg_'+Date.now(), sender: 'bot-aipro', isBot: true, text: res.reply || 'No response', ts: Date.now() });
+        let reply = await callAI("SYSTEM: Expert Developer. Jawab detail, cerdas, tidak berbasa-basi.\n\n" + text);
+        aiproChat.push({ id: 'msg_'+Date.now(), sender: 'bot-aipro', isBot: true, text: reply, ts: Date.now() });
     } catch(e) {
         aiproChat.push({ id: 'msg_'+Date.now(), sender: 'bot-aipro', isBot: true, text: 'Error connecting to AI Pro.', ts: Date.now() });
     }
@@ -1233,8 +1530,9 @@ async function sendAiPro() {
 
 // ======== Admin Settings ========
 function saveBg() {
-    let url = document.getElementById('admin-bg-url').value;
+    let url = extractImageUrl(document.getElementById('admin-bg-url').value);
     settings.bgUrl = url;
+    document.getElementById('admin-bg-url').value = url;
     DB.set('settings', settings);
     alert('Background tersimpan!');
     if(url) {
@@ -1246,7 +1544,12 @@ function saveBg() {
         document.body.style.backgroundImage = 'none';
     }
 }
-function saveRules() {
+function saveInfoWeb() {
+        settings.infoWeb = document.getElementById('admin-info-text').value;
+        DB.set('settings', settings);
+        alert('Info Web tersimpan!');
+    }
+    function saveRules() {
     let tx = document.getElementById('admin-rules-text').value;
     settings.rules = tx;
     DB.set('settings', settings);
@@ -1255,6 +1558,7 @@ function saveRules() {
 
 document.getElementById('admin-bg-url').value = settings.bgUrl || '';
 document.getElementById('admin-rules-text').value = settings.rules || '';
+     document.getElementById('admin-info-text').value = settings.infoWeb || '';
 
 </script>
 </body>
