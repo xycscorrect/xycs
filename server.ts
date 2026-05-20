@@ -14,7 +14,7 @@ app.use(express.json());
 
 // Initialize GoogleGenAI client lazy-loaded with robust validation
 function getGeminiClient() {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || "AIzaSyDWnpOdmcjIGMTOr65hSdhxobeS4iNpa1Y";
     if (!apiKey) {
         throw new Error("GEMINI_API_KEY is not defined. Please set it in Settings > Secrets or .env file.");
     }
